@@ -99,7 +99,7 @@ A: 插件仅读取数据库结构信息，构建dify知识库，敏感信息不�
 
 ## 联系方式
 
-- 作者：weijunjiang
+- 开发者：[dylan jiang](https://github.com/weijunjiang123)
 - 邮箱：<weijun.jiang@jototech.cn>
 
 ---

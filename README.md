@@ -93,14 +93,12 @@ A: The plugin only reads database structure information to build the Dify knowle
 
 ## Contact
 
-- Author: weijunjiang
+- developer: [dylan jiang](https://github.com/weijunjiang123)
 - Email: <weijun.jiang@jototech.cn>
 
 ---
 
 ## License
-
-MIT
 
 
 
