@@ -1,0 +1,142 @@
+identity:
+  name: text2sql
+  author: joto
+  label:
+    en_US: Text to SQL
+    zh_Hans: 文本转SQL
+    pt_BR: Text to SQL
+    icon: logo.jpg
+ 
+description:
+  human:
+    en_US: Convert natural language questions to SQL queries using database schema knowledge base
+    zh_Hans: 使用数据库架构知识库将自然语言问题转换为SQL查询
+    pt_BR: Convert natural language questions to SQL queries using database schema knowledge base
+  llm: A tool that converts natural language questions to SQL queries by retrieving relevant schema information from a knowledge base and using LLM to generate SQL
+
+parameters:
+  - name: dataset_id
+    type: string
+    required: true
+    label:
+      en_US: Dataset ID
+      zh_Hans: 知识库ID
+      pt_BR: Dataset ID
+    human_description:
+      en_US: The ID of the Dify dataset containing the database schema
+      zh_Hans: 包含数据库架构的Dify知识库ID
+      pt_BR: The ID of the Dify dataset containing the database schema
+    llm_description: The dataset ID from Dify knowledge base containing database schema information
+    form: llm
+
+  - name: llm
+    type: model-selector
+    scope: llm
+    required: true
+    label:
+      en_US: LLM Model
+      zh_Hans: 大语言模型
+      pt_BR: LLM Model
+    human_description:
+      en_US: The large language model to use for SQL generation
+      zh_Hans: 用于生成SQL的大语言模型
+      pt_BR: The large language model to use for SQL generation
+    llm_description: The LLM model to use for generating SQL queries
+    form: form
+
+  - name: content
+    type: string
+    required: true
+    label:
+      en_US: Question
+      zh_Hans: 问题
+      pt_BR: Question
+    human_description:
+      en_US: The natural language question to convert to SQL
+      zh_Hans: 要转换为SQL的自然语言问题
+      pt_BR: The natural language question to convert to SQL
+    llm_description: The natural language question that needs to be converted to SQL query
+    form: llm
+
+  - name: dialect
+    type: select
+    required: true
+    label:
+      en_US: SQL Dialect
+      zh_Hans: SQL方言
+      pt_BR: SQL Dialect
+    human_description:
+      en_US: The SQL dialect to use for query generation
+      zh_Hans: 用于查询生成的SQL方言
+      pt_BR: The SQL dialect to use for query generation
+    llm_description: The SQL dialect (MySQL or PostgreSQL) to use for generating the query
+    form: form
+    options:
+      - value: mysql
+        label:
+          en_US: MySQL
+          zh_Hans: MySQL
+          pt_BR: MySQL
+      - value: postgresql
+        label:
+          en_US: PostgreSQL
+          zh_Hans: PostgreSQL
+          pt_BR: PostgreSQL
+    default: mysql
+
+  - name: top_k
+    type: number
+    required: false
+    label:
+      en_US: Top K Results
+      zh_Hans: 检索结果数量
+      pt_BR: Top K Results
+    human_description:
+      en_US: Number of top results to retrieve from knowledge base
+      zh_Hans: 从知识库检索的结果数量
+      pt_BR: Number of top results to retrieve from knowledge base
+    llm_description: The number of top results to retrieve from the knowledge base for schema information
+    form: form
+    default: 5
+    min: 1
+    max: 20
+
+  - name: retrieval_model
+    type: select
+    required: false
+    label:
+      en_US: Retrieval Method
+      zh_Hans: 检索方法
+      pt_BR: Retrieval Method
+    human_description:
+      en_US: The retrieval method to use for searching the knowledge base
+      zh_Hans: 用于搜索知识库的检索方法
+      pt_BR: The retrieval method to use for searching the knowledge base
+    llm_description: The retrieval method to use for searching relevant schema information
+    form: form
+    options:
+      - value: keyword_search
+        label:
+          en_US: Keyword Search
+          zh_Hans: 关键字检索
+          pt_BR: Keyword Search
+      - value: semantic_search
+        label:
+          en_US: Semantic Search
+          zh_Hans: 语义检索
+          pt_BR: Semantic Search
+      - value: full_text_search
+        label:
+          en_US: Full Text Search
+          zh_Hans: 全文检索
+          pt_BR: Full Text Search
+      - value: hybrid_search
+        label:
+          en_US: Hybrid Search
+          zh_Hans: 混合检索
+          pt_BR: Hybrid Search
+    default: semantic_search
+
+extra:
+  python:
+    source: tools/text2sql.py

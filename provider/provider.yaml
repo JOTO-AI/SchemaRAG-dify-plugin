@@ -1,0 +1,131 @@
+identity:
+  author: joto
+  name: schemarag
+  label:
+    en_US: Schema RAG
+    zh_Hans: Schema RAG
+    pt_BR: Schema RAG
+  description:
+    en_US: Automatically create database schema knowledge base to build RAGs. Nodes containing natural language to SQL functionality based on schemaRAG
+    zh_Hans: 自动创建数据库schema知识库构建RAG。包含基于schemaRAG的自然语言转SQL功能的节点
+    pt_BR: Construa um esquema para RAG no conjunto de dados Dify. Contém nós que executam a função text2sql com base no schemaRAG.
+  icon: logo.jpg
+  tags:
+    - business
+    - other
+
+credentials_for_provider:
+  api_uri:
+    type: text-input
+    required: true
+    label:
+      en_US: Dify API URI
+      zh_Hans: Dify API 地址
+      pt_BR: Dify API URI
+    placeholder:
+      en_US: http://dify.ai/v1
+      zh_Hans: http://dify.ai/v1
+      pt_BR: http://dify.ai/v1
+    default: "http://dify.ai/v1"
+
+  dataset_api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Dify Dataset API key
+      zh_Hans: Dify 知识库 API key
+      pt_BR: Dify Dataset API key
+    placeholder:
+      en_US: Please input your Dify Dataset API key
+      zh_Hans: 请输入你的 Dify 知识库 API key
+      pt_BR: Please input your Dify Dataset API key
+
+  db_type:
+    type: select
+    required: true
+    label:
+      en_US: Database type
+      zh_Hans: 数据库类型
+      pt_BR: Database type
+    options:
+      - value: mysql
+        label:
+          en_US: MySQL
+          zh_Hans: MySQL
+          pt_BR: MySQL
+      - value: postgresql
+        label:
+          en_US: PostgreSQL
+          zh_Hans: PostgreSQL
+          pt_BR: PostgreSQL
+
+  db_host:
+    type: text-input
+    required: true
+    label:
+      en_US: Database Host
+      zh_Hans: 数据库主机
+      pt_BR: Database Host
+    placeholder:
+      en_US: Please input your database host
+      zh_Hans: 请输入数据库主机地址
+      pt_BR: Please input your database host
+
+  db_port:
+    type: text-input
+    required: true
+    label:
+      en_US: Database Port
+      zh_Hans: 数据库端口
+      pt_BR: Database Port
+    placeholder:
+      en_US: Please input your database port
+      zh_Hans: 请输入数据库端口
+      pt_BR: Please input your database port
+    default: "3306"
+
+  db_user:
+    type: text-input
+    required: true
+    label:
+      en_US: Database User
+      zh_Hans: 数据库用户名
+      pt_BR: Database User
+    placeholder:
+      en_US: Please input your database username
+      zh_Hans: 请输入数据库用户名
+      pt_BR: Please input your database username
+
+  db_password:
+    type: secret-input
+    required: true
+    label:
+      en_US: Database Password
+      zh_Hans: 数据库密码
+      pt_BR: Database Password
+    placeholder:
+      en_US: Please input your database password
+      zh_Hans: 请输入数据库密码
+      pt_BR: Please input your database password
+
+  db_name:
+    type: text-input
+    required: true
+    label:
+      en_US: Database Name
+      zh_Hans: 数据库名称
+      pt_BR: Database Name
+    placeholder:
+      en_US: Please input your database name
+      zh_Hans: 请输入数据库名称
+      pt_BR: Please input your database name
+
+supported_app_types:
+  - workflow
+  - chatbot
+tools:
+  - tools/text2sql.yaml
+extra:
+  python:
+    source: provider/build_schema_rag.py
+    provider: SchemaRAGBuilderProvider

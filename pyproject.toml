@@ -1,0 +1,25 @@
+[project]
+name = "SchemaRAG"
+version = "0.1.0"
+description = "Build database schema for RAG in Dify dataset"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dify-plugin",
+    "sqlalchemy",
+    "pymysql",
+    "psycopg2-binary",
+    "httpx",
+    "llama-index-core",
+    "dify-client"
+]
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["tools", "service", "core", "provider"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml"]

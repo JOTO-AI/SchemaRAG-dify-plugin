@@ -1,0 +1,49 @@
+version: 0.0.1
+type: plugin
+author: joto
+name: schemarag
+label:
+  en_US: DB Schema RAG
+  ja_JP: DB Schema RAG
+  zh_Hans: DB Schema RAG
+  pt_BR: DB Schema RAG
+description:
+  en_US: Automatically create database schema knowledge base to build RAGs. Nodes containing natural language to SQL functionality based on schemaRAG
+  ja_JP: データベーススキーマ知識ベースを自動作成し、RAGを構築します。schemaRAGに基づく自然言語からSQLへの変換機能ノードを含みます。
+  zh_Hans: 自动创建数据库schema知识库构建RAG。包含基于schemaRAG的自然语言转SQL功能的节点
+  pt_BR: Construa um esquema para RAG no conjunto de dados Dify. Contém nós que executam a função text2sql com base no schemaRAG.
+icon: logo.jpg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    app:
+      enabled: false
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/provider.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-06-25T09:58:46.9486348+08:00
+privacy: PRIVACY.md
+verified: false
