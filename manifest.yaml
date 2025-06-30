@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: joto
+author: JOTO-AI
 name: schemarag
 label:
   en_US: DB Schema RAG
