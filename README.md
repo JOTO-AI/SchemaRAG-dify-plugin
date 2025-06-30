@@ -99,6 +99,4 @@ A: The plugin only reads database structure information to build the Dify knowle
 ---
 
 ## License
-
-
-
+MIT
