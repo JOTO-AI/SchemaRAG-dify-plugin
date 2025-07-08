@@ -9,6 +9,7 @@ sys.path.append(
 
 from dify_plugin import ToolProvider
 from tools.text2sql import Text2SQLTool
+from tools.sql_executer import SQLExecuterTool
 from config import DatabaseConfig, LoggerConfig, DifyUploadConfig
 from service.schema_builder import SchemaRAGBuilder
 
@@ -134,4 +135,4 @@ class SchemaRAGBuilderProvider(ToolProvider):
         """
         Return available tools
         """
-        return [Text2SQLTool]
+        return [Text2SQLTool, SQLExecuterTool]
