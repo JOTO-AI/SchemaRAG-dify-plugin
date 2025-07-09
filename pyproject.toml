@@ -11,7 +11,8 @@ dependencies = [
     "psycopg2-binary",
     "httpx",
     "llama-index-core",
-    "dify-client"
+    "dify-client",
+    "pandas>=2.3.1",
 ]
 
 [build-system]

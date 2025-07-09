@@ -3,6 +3,8 @@ from typing import Any
 import sys
 import logging
 
+from tools.text2data import Text2DataTool
+
 sys.path.append(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )  # 添加上级目录到路径中
@@ -43,19 +45,19 @@ class SchemaRAGBuilderProvider(ToolProvider):
         # 验证数据库相关参数
         if not db_type:
             raise ValueError("Database type is required")
-        
+
         if not db_host:
             raise ValueError("Database host is required")
-            
+
         if not db_port:
             raise ValueError("Database port is required")
-            
+
         if not db_user:
             raise ValueError("Database user is required")
-            
+
         if not db_password:
             raise ValueError("Database password is required")
-            
+
         if not db_name:
             raise ValueError("Database name is required")
 
@@ -69,11 +71,11 @@ class SchemaRAGBuilderProvider(ToolProvider):
         try:
             # 获取项目根目录
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            
+
             # 确保logs目录存在
-            logs_dir = os.path.join(project_root, 'logs')
+            logs_dir = os.path.join(project_root, "logs")
             os.makedirs(logs_dir, exist_ok=True)
-            
+
             # 创建数据库配置
             db_config = DatabaseConfig(
                 type=credentials.get("db_type"),
@@ -81,13 +83,12 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 port=int(credentials.get("db_port", 3306)),
                 user=credentials.get("db_user"),
                 password=credentials.get("db_password"),
-                database=credentials.get("db_name")
+                database=credentials.get("db_name"),
             )
 
             # 创建日志配置
             logger_config = LoggerConfig(
-                log_level='INFO',
-                log_file=os.path.join(logs_dir, 'schema_builder.log')
+                log_level="INFO", log_file=os.path.join(logs_dir, "schema_builder.log")
             )
 
             # 创建Dify集成配置
@@ -97,7 +98,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 indexing_technique="high_quality",
                 permission="all_team_members",
                 process_mode="custom",
-                max_tokens=1000
+                max_tokens=1000,
             )
 
             # 创建构建器实例
@@ -105,34 +106,36 @@ class SchemaRAGBuilderProvider(ToolProvider):
 
             try:
                 # 确保output目录存在
-                output_dir = os.path.join(project_root, 'output')
+                output_dir = os.path.join(project_root, "output")
                 os.makedirs(output_dir, exist_ok=True)
-                
+
                 # 生成数据字典
-                schema_file_path = os.path.join(output_dir, f'{db_config.database}_schema.md')
+                schema_file_path = os.path.join(
+                    output_dir, f"{db_config.database}_schema.md"
+                )
                 schema_content = builder.generate_dictionary(schema_file_path)
-                
+
                 # 记录成功信息
                 table_count = schema_content.count("#") if schema_content else 0
-                logging.info(f'📊 数据字典生成成功！包含 {table_count} 个表')
-                
+                logging.info(f"📊 数据字典生成成功！包含 {table_count} 个表")
+
                 # 上传到 Dify 知识库
-                dataset_name = f'{db_config.database}_schema'
+                dataset_name = f"{db_config.database}_schema"
                 builder.upload_text_to_dify(dataset_name, schema_content)
-                logging.info('☁️ 已成功上传到 Dify 知识库')
-                
+                logging.info("☁️ 已成功上传到 Dify 知识库")
+
             except Exception as e:
-                logging.error(f'❌ Schema RAG构建失败: {e}')
+                logging.error(f"❌ Schema RAG构建失败: {e}")
                 raise ValueError(f"Schema RAG构建失败: {str(e)}")
             finally:
                 builder.close()
-                
+
         except Exception as e:
-            logging.error(f'❌ 配置验证或构建过程中发生错误: {e}')
+            logging.error(f"❌ 配置验证或构建过程中发生错误: {e}")
             raise ValueError(f"配置验证或构建过程中发生错误: {str(e)}")
 
     def get_tools(self):
         """
         Return available tools
         """
-        return [Text2SQLTool, SQLExecuterTool]
+        return [Text2SQLTool, SQLExecuterTool, Text2DataTool]

@@ -23,10 +23,10 @@ credentials_for_provider:
       zh_Hans: Dify API 地址
       pt_BR: Dify API URI
     placeholder:
-      en_US: http://dify.ai/v1
-      zh_Hans: http://dify.ai/v1
-      pt_BR: http://dify.ai/v1
-    default: "http://dify.ai/v1"
+      en_US: http://localhost/v1
+      zh_Hans: http://localhost/v1
+      pt_BR: http://localhost/v1
+    default: "http://localhost/v1"
 
   dataset_api_key:
     type: secret-input
@@ -126,6 +126,7 @@ supported_app_types:
 tools:
   - tools/text2sql.yaml
   - tools/sql_executer.yaml
+  - tools/text2data.yaml
 extra:
   python:
     source: provider/build_schema_rag.py
