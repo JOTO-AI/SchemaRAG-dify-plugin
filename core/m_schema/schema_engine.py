@@ -10,6 +10,7 @@ from sqlalchemy import (
     select,
     text,
 )
+
 from sqlalchemy.engine import Engine
 from llama_index.core import SQLDatabase
 from utils import read_json, write_json, save_raw_text, examples_to_str
@@ -139,11 +140,11 @@ class SchemaEngine(SQLDatabase):
         return values
 
     def init_mschema(self):
-        print(f"Debug: Database dialect = {self._engine.dialect.name}")
-        print(f"Debug: DB name = {self._db_name}")
-        print(f"Debug: Available schemas = {self.get_schema_names()}")
-        print(f"Debug: Usable tables = {self._usable_tables}")
-        print(f"Debug: Tables schemas mapping = {self._tables_schemas}")
+        # print(f"Debug: Database dialect = {self._engine.dialect.name}")
+        # print(f"Debug: DB name = {self._db_name}")
+        # print(f"Debug: Available schemas = {self.get_schema_names()}")
+        # print(f"Debug: Usable tables = {self._usable_tables}")
+        # print(f"Debug: Tables schemas mapping = {self._tables_schemas}")
 
         for table_name in self._usable_tables:
             table_comment = self.get_table_comment(table_name)
