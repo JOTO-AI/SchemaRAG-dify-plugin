@@ -1,59 +1,65 @@
-# SchemaRAG
+# SchemaRAG Database Schema RAG Plugin
+
+[![Version](https://img.shields.io/badge/version-0.0.2-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-orange.svg)](https://opensource.org/licenses/MIT)
 
 **Author:** joto  
-**Version:** 0.0.1  
+**Version:** 0.0.2  
 **Type:** tool
 
 ---
 
-## Description
+## Overview
 
-This is a Dify plug-in for automatically analyzing database structures, building a knowledge base, and implementing natural language to SQL. It includes a node tool for natural language to SQL out of the box.
+SchemaRAG is a database schema RAG plugin designed specifically for the Dify platform. It can automatically analyze database structures, build knowledge bases, and implement natural language to SQL queries. This plugin provides a complete database schema analysis and intelligent query solution, ready to use out of the box.
 
 ---
 
 ## ✨ Core Features
 
-- **Multi-Database Support**: MySQL & PostgreSQL with automatic syntax adaptation
-- **Schema Auto-Analysis**: One-click data dictionary generation with structure visualization
-- **Knowledge Base Upload**: Automatic upload to Dify with incremental update support
-- **Text2SQL**: Ready-to-use natural language to SQL conversion supporting complex queries
-- **Security**: SELECT-only access with field whitelist support and minimum privilege principle
-- **LLM Model Support**: Compatible with mainstream large language models
+- **Multi-Database Support**: MySQL & PostgreSQL, automatic syntax adaptation
+- **Schema Auto-Analysis**: One-click data dictionary generation, structure visualization
+- **Knowledge Base Upload**: Automatic upload to Dify, supports incremental updates
+- **Natural Language to SQL**: Ready to use out of the box, supports complex queries
+- **Security Mechanism**: SELECT-only access, supports field whitelist, minimum privilege principle
+- **Flexible Support**: Compatible with mainstream large language models
 
 ---
 
-## Parameters
+## 📋 Configuration Parameters
 
-| Name             | Type   | Required | Description                    | Example               |
-|------------------|--------|----------|--------------------------------|-----------------------|
-| Dataset API Key  | secret | Yes      | Dify dataset API key           | dataset-xxx           |
-| Database Type    | select | Yes      | Database type MySQL/PostgreSQL| MySQL                 |
-| Database Host    | string | Yes      | Database host/IP               | 127.0.0.1             |
-| Database Port    | number | Yes      | Database port                  | 3306/5432             |
-| Database User    | string | Yes      | Database username              | root                  |
-| Database Password| secret | Yes      | Database password              | ******                |
-| Database Name    | string | Yes      | Database name                  | mydb                  |
-| Dify Base URL    | string | No       | Dify API base URL              | <https://api.dify.ai/v1> |
+| Parameter Name    | Type   | Required | Description                    | Example                   |
+|------------------|--------|----------|--------------------------------|---------------------------|
+| Dataset API Key  | secret | Yes      | Dify knowledge base API key    | dataset-xxx               |
+| Database Type    | select | Yes      | Database type MySQL/PostgreSQL | MySQL                     |
+| Database Host    | string | Yes      | Database host/IP               | 127.0.0.1                 |
+| Database Port    | number | Yes      | Database port                  | 3306/5432                 |
+| Database User    | string | Yes      | Database username              | root                      |
+| Database Password| secret | Yes      | Database password              | ******                    |
+| Database Name    | string | Yes      | Database name                  | mydb                      |
+| Dify Base URL    | string | No       | Dify API base URL              | `https://api.dify.ai/v1`  |
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Command Line
+### Method 1: Command Line
 
 ```bash
 uv run main.py 
 ```
 
-### 2. Dify Plugin Integration
+### Method 2: Dify Plugin Integration
 
-Configure the above parameters in the Dify platform plugin configuration interface, save and drag into your workflow.
+1. Fill in the above parameters in the Dify platform plugin configuration interface
+2. Save the configuration and drag it into your workflow
 
-### 3. Code Example
+### Method 3: Code Invocation
 
 ```python
 from provider.build_schema_rag import BuildSchemaRAG
+
 builder = BuildSchemaRAG(
     dataset_api_key="your-key",
     db_type="MySQL",
@@ -69,34 +75,57 @@ print(result)
 
 ---
 
-## Screenshots
+## 🛠️ Tool Components
 
-![Screenshot 1](./image/image.png)
+### 1. text2sql Tool
 
-![Screenshot 2](./image/image-1.png)
+By configuring database connections, automatically build database schema knowledge base. Connect the knowledge base in workflows to achieve text2sql functionality, ready to use out of the box.
 
-![Screenshot 3](./image/image-2.png)
+### 2. sql_executer Tool
 
-![Screenshot 4](./image/image-3.png)
+Provides secure interface for database query functionality in Dify workflows. Supports markdown and json output formats.
+
+### 3. text2data Tool
+
+Encapsulates the above two tools, ready to use out of the box, with added LLM summarization functionality to summarize query data into reports.
 
 ---
 
-## FAQ
+## ❓ FAQ
 
 **Q: Which databases are supported?**  
 A: Currently supports MySQL and PostgreSQL.
 
 **Q: Is the data secure?**  
-A: The plugin only reads database structure information to build the Dify knowledge base. Sensitive information is not uploaded.
+A: The plugin only reads database structure information to build Dify knowledge base. Sensitive information is not uploaded.
+
+**Q: How to configure the database?**  
+A: Configure database and knowledge base related information in the Dify plugin page. After configuration, it will automatically build the schema knowledge base in Dify.
+
+**Q: How to use the text2sql tool?**  
+A: After configuring the database and generating the schema knowledge base, you need to obtain the dataset_id from the generated knowledge base URL and fill it into the tool to specify the indexed knowledge base, and configure other information to use it.
 
 ---
 
-## Contact
+## 📸 Example Screenshots
 
-- developer: [dylan jiang](https://github.com/weijunjiang123)
-- Email: <weijun.jiang@jototech.cn>
+![Schema Building Interface](./image/image-0.png)
+
+![Workflow Configuration](./image/image-1.png)
+
+![Query Results Display](./image/image-2.png)
+
+![Data Summary Report](./image/image-3.png)
 
 ---
 
-## License
+## 📞 Contact
+
+- **Developer**: [Dylan Jiang](https://github.com/weijunjiang123)
+- **Email**: <weijun.jiang@jototech.cn>
+
+---
+
+## 📄 License
+
 MIT
