@@ -31,7 +31,6 @@ parameters:
 
   - name: llm
     type: model-selector
-    scope: llm
     required: true
     label:
       en_US: LLM Model

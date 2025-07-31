@@ -6,3 +6,4 @@ httpx
 llama-index-core
 dify-client
 pandas
+tabulate

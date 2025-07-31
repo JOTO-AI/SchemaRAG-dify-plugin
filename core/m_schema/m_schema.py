@@ -1,5 +1,5 @@
 from utils import examples_to_str, read_json, save_raw_text, write_json
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 
 class MSchema:
@@ -71,7 +71,7 @@ class MSchema:
     def get_field_info(self, table_name: str, field_name: str) -> Dict:
         try:
             return self.tables[table_name]["fields"][field_name]
-        except:
+        except Exception:
             return {}
 
     def single_table_mschema(
@@ -118,7 +118,7 @@ class MSchema:
             ## 打上主键标识
             is_primary_key = field_info.get("primary_key", False)
             if is_primary_key:
-                field_line += f", Primary Key"
+                field_line += ", Primary Key"
 
             # 如果有示例，添加上
             if len(field_info.get("examples", [])) > 0 and example_num > 0:
@@ -168,7 +168,7 @@ class MSchema:
         output = []
 
         output.append(f"【DB_ID】 {self.db_id}")
-        output.append(f"【Schema】")
+        output.append("【Schema】")
 
         if selected_tables is not None:
             selected_tables = [s.lower() for s in selected_tables]
@@ -179,7 +179,6 @@ class MSchema:
         # 依次处理每一个表
         for table_name, table_info in self.tables.items():
             if selected_tables is None or table_name.lower() in selected_tables:
-                cur_table_type = table_info.get("type", "table")
                 column_names = list(table_info["fields"].keys())
                 if selected_columns is not None:
                     cur_selected_columns = [

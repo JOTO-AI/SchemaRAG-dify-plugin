@@ -1,20 +1,18 @@
 # SchemaRAG 数据库架构RAG插件
 
+[![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-orange.svg)](https://opensource.org/licenses/MIT)
+
 **作者:** joto  
-**版本:** 0.0.1  
+**版本:** 0.0.3  
 **类型:** 工具
 
 ---
 
-## 描述
+## 概述
 
-这是一个用于自动分析数据库结构、构建知识库并实现自然语言转SQL的 Dify 插件，包含开箱即用的自然语言转sql的节点工具。
-
----
-
-## 声明
-
-感谢大家对本项目的关注，您的反馈对插件优化非常重要，欢迎加入社区讨论与合作！
+SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够自动分析数据库结构、构建知识库并实现自然语言转SQL查询。该插件提供了完整的数据库schema分析和智能查询解决方案，开箱即用。
 
 ---
 
@@ -29,37 +27,39 @@
 
 ---
 
-## 配置参数
+## 📋 配置参数
 
-| 参数名            | 类型     | 必填 | 说明                         | 示例                   |
-|------------------|----------|------|------------------------------|------------------------|
-| Dataset API Key  | secret   | 是   | Dify知识库API密钥             | dataset-xxx            |
-| Database Type    | select   | 是   | 数据库类型 MySQL/PostgreSQL   | MySQL                  |
-| Database Host    | string   | 是   | 数据库主机/IP                 | 127.0.0.1              |
-| Database Port    | number   | 是   | 数据库端口                    | 3306/5432              |
-| Database User    | string   | 是   | 数据库用户名                  | root                   |
-| Database Password| secret   | 是   | 数据库密码                    | ******                 |
-| Database Name    | string   | 是   | 数据库名称                    | mydb                   |
-| Dify Base URL    | string   | 否   | Dify API基础URL               | <https://api.dify.ai/v1> |
+| 参数名            | 类型     | 必填 | 说明                         | 示例                      |
+|------------------|----------|------|------------------------------|---------------------------|
+| Dataset API Key  | secret   | 是   | Dify知识库API密钥             | dataset-xxx               |
+| Database Type    | select   | 是   | 数据库类型 MySQL/PostgreSQL   | MySQL                     |
+| Database Host    | string   | 是   | 数据库主机/IP                 | 127.0.0.1                 |
+| Database Port    | number   | 是   | 数据库端口                    | 3306/5432                 |
+| Database User    | string   | 是   | 数据库用户名                  | root                      |
+| Database Password| secret   | 是   | 数据库密码                    | ******                    |
+| Database Name    | string   | 是   | 数据库名称                    | mydb                      |
+| Dify Base URL    | string   | 否   | Dify API基础URL               | `https://api.dify.ai/v1`  |
 
 ---
 
 ## 🚀 快速开始
 
-### 1. 命令行方式
+### 方式一：命令行运行
 
 ```bash
 uv run main.py 
 ```
 
-### 2. Dify 插件集成
+### 方式二：Dify 插件集成
 
-在 Dify 平台插件配置界面，填写上述参数，保存后即可在工作流中拖入使用。
+1. 在 Dify 平台插件配置界面填写上述参数
+2. 保存配置后即可在工作流中拖入使用
 
-### 3. 代码调用示例
+### 方式三：代码调用
 
 ```python
 from provider.build_schema_rag import BuildSchemaRAG
+
 builder = BuildSchemaRAG(
     dataset_api_key="your-key",
     db_type="MySQL",
@@ -75,34 +75,58 @@ print(result)
 
 ---
 
-## 示例截图
+## 🛠️ 工具组件
 
-![截图1](./image/image.png)
+### 1. text2sql 工具
 
-![截图2](./image/image-1.png)
+通过配置连接数据库，自动构建数据库 schema 知识库，在工作流中连接知识库即可实现 text2sql 的功能，开箱即用。
 
-![截图3](./image/image-2.png)
+### 2. sql_executer 工具
 
-![截图4](./image/image-3.png)
+提供安全的接口在 Dify 工作流中实现数据库查询的功能，可以指定 markdown 和 json 两种输出格式。
+
+### 3. text2data 工具
+
+封装上述两种工具，开箱即用，增加 LLM 总结功能，将查询的数据总结成报告输出。
+
 
 ---
 
-## 常见问题
+## ❓ 常见问题
 
 **Q: 支持哪些数据库？**  
 A: 当前支持 MySQL 和 PostgreSQL。
 
 **Q: 数据是否安全？**  
-A: 插件仅读取数据库结构信息，构建dify知识库，敏感信息不会上传。
+A: 插件仅读取数据库结构信息，构建 Dify 知识库，敏感信息不会上传。
+
+**Q: 如何配置数据库？**  
+A: 在 Dify 插件页面中配置数据库和知识库相关信息，配置完成后会自动在 Dify 中构建 schema 知识库。
+
+**Q: 如何使用 text2sql 工具？**  
+A: 在配置好数据库并生成 schema 知识库后，需要在生成的知识库 URL 中获取 dataset_id 并填入工具中，指定索引的知识库，并且配置好其他信息即可使用。
 
 ---
 
-## 联系方式
+## 📸 示例截图
 
-- 开发者：[dylan jiang](https://github.com/weijunjiang123)
-- 邮箱：<weijun.jiang@jototech.cn>
+![Schema 构建界面](./image/image-0.png)
+
+![工作流配置](./image/image-1.png)
+
+![查询结果展示](./image/image-2.png)
+
+![数据总结报告](./image/image-3.png)
 
 ---
 
-## 许可证
+## 📞 联系方式
+
+- **开发者**: [Dylan Jiang](https://github.com/weijunjiang123)
+- **邮箱**: <weijun.jiang@jototech.cn>
+
+---
+
+## 📄 许可证
+
 MIT

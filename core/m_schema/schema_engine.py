@@ -1,19 +1,13 @@
-import json, os
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, List, Optional
 from sqlalchemy import (
-    create_engine,
     MetaData,
     Table,
-    Column,
-    String,
-    Integer,
     select,
-    text,
 )
 
 from sqlalchemy.engine import Engine
 from llama_index.core import SQLDatabase
-from utils import read_json, write_json, save_raw_text, examples_to_str
+from utils import examples_to_str
 from core.m_schema.m_schema import MSchema
 
 
@@ -48,9 +42,9 @@ class SchemaEngine(SQLDatabase):
 
         self._db_name = db_name
         # Dictionary to store table names and their corresponding schema
-        self._tables_schemas: Dict[str, str] = (
-            {}
-        )  # For MySQL and similar databases, if no schema is specified but db_name is provided,
+        self._tables_schemas: Dict[
+            str, str
+        ] = {}  # For MySQL and similar databases, if no schema is specified but db_name is provided,
         # use db_name as the schema to avoid getting tables from all databases
         if schema is None and db_name:
             if self._engine.dialect.name == "mysql":
@@ -100,7 +94,7 @@ class SchemaEngine(SQLDatabase):
             return self._inspector.get_table_comment(
                 table_name, self._tables_schemas[table_name]
             )["text"]
-        except:  # sqlite does not support comments
+        except Exception:  # sqlite does not support comments
             return ""
 
     def default_schema_name(self) -> Optional[str]:
@@ -186,7 +180,7 @@ class SchemaEngine(SQLDatabase):
 
                 try:
                     examples = self.fectch_distinct_values(table_name, field_name, 5)
-                except:
+                except Exception:
                     examples = []
                 examples = examples_to_str(examples)
 
