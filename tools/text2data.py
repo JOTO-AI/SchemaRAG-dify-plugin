@@ -3,19 +3,17 @@ from typing import Any
 import sys
 import os
 import re
+from prompt import text2sql_prompt, summary_prompt
+from service.knowledge_service import KnowledgeService
+from service.database_service import DatabaseService
+from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
 # 添加项目根目录到Python路径，以便导入service模块
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-
-from prompt import text2sql_prompt, summary_prompt
-from service.knowledge_service import KnowledgeService
-from service.database_service import DatabaseService
-
-from dify_plugin import Tool
-from dify_plugin.entities.tool import ToolInvokeMessage
-from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
 
 class Text2DataTool(Tool):

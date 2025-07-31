@@ -20,7 +20,6 @@ class DifyClient:
 
         url = f"{self.base_url}{endpoint}"
         try:
-
             with httpx.Client() as client:
                 response = client.request(
                     method, url, json=json, params=params, headers=headers
@@ -34,7 +33,7 @@ class DifyClient:
                     error_data = response.json()
                     if isinstance(error_data, dict):
                         error_msg += f" - {error_data.get('message', '未知错误')}"
-                except:
+                except Exception:
                     error_msg += f" - {response.text}"
                 raise ValueError(error_msg)
 

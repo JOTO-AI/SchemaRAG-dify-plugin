@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Optional, Type, Dict, Any, Union
+from typing import Optional
 import sys
 
 sys.path.append(
@@ -8,12 +8,11 @@ sys.path.append(
 )  # 添加上级目录到路径中
 
 from sqlalchemy.engine import Engine
-from sqlalchemy import inspect
 from sqlalchemy import create_engine
 from core.m_schema.schema_engine import SchemaEngine
 from config import DatabaseConfig, DifyUploadConfig, LoggerConfig
 from service.dify_service import DifyUploader
-from utils import Logger, save_json, read_json, save_raw_text, examples_to_str
+from utils import Logger, read_json, save_raw_text
 
 
 class SchemaRAGBuilder:
