@@ -35,7 +35,7 @@ plugins:
   tools:
     - provider/provider.yaml
 meta:
-  version: 0.0.1
+  version: 0.0.3
   arch:
     - amd64
     - arm64
