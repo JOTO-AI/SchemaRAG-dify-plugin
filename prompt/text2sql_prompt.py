@@ -1,9 +1,8 @@
-
 def _build_system_prompt(dialect: str, db_schema: str, question: str) -> str:
-        """
-        构建预定义的system prompt
-        """
-        system_prompt = f"""You are now a {dialect} data analyst, and you are given a database schema as follows:
+    """
+    构建预定义的system prompt
+    """
+    system_prompt = f"""You are now a {dialect} data analyst, and you are given a database schema as follows:
 
         【Schema】
         {db_schema}
@@ -19,4 +18,4 @@ def _build_system_prompt(dialect: str, db_schema: str, question: str) -> str:
         6. Always wrap the final SQL query in ```sql and ``` code blocks
         """
 
-        return system_prompt
+    return system_prompt

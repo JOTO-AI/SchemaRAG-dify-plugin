@@ -48,9 +48,9 @@ class SchemaEngine(SQLDatabase):
 
         self._db_name = db_name
         # Dictionary to store table names and their corresponding schema
-        self._tables_schemas: Dict[str, str] = (
-            {}
-        )  # For MySQL and similar databases, if no schema is specified but db_name is provided,
+        self._tables_schemas: Dict[
+            str, str
+        ] = {}  # For MySQL and similar databases, if no schema is specified but db_name is provided,
         # use db_name as the schema to avoid getting tables from all databases
         if schema is None and db_name:
             if self._engine.dialect.name == "mysql":

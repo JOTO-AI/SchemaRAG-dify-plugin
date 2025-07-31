@@ -1,10 +1,8 @@
 from collections.abc import Generator
-from typing import Any, Dict, List
-import json
-import pandas as pd
-import requests
+from typing import Any
 import sys
 import os
+import re
 
 # 添加项目根目录到Python路径，以便导入service模块
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,9 +10,8 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from prompt import text2sql_prompt, summary_prompt
-
-from service.database_service import DatabaseService
 from service.knowledge_service import KnowledgeService
+from service.database_service import DatabaseService
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -22,26 +19,35 @@ from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMe
 
 
 class Text2DataTool(Tool):
+    """
+    Text to Data Tool - Convert natural language questions to SQL queries and execute them to return data
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # 初始化知识库服务
+        self.api_uri = self.runtime.credentials.get("api_uri")
+        self.dataset_api_key = self.runtime.credentials.get("dataset_api_key")
+        self.knowledge_service = KnowledgeService(self.api_uri, self.dataset_api_key)
+
+        # 初始化数据库服务
+        self.db_service = DatabaseService()
+
+        # 从 provider 获取数据库配置
         credentials = self.runtime.credentials
         self.db_type = credentials.get("db_type")
         self.db_host = credentials.get("db_host")
-        self.db_port = int(credentials.get("db_port"))
+        self.db_port = (
+            int(credentials.get("db_port")) if credentials.get("db_port") else None
+        )
         self.db_user = credentials.get("db_user")
         self.db_password = credentials.get("db_password")
         self.db_name = credentials.get("db_name")
-        self.api_uri = credentials.get("api_uri")
-        self.dataset_api_key = credentials.get("dataset_api_key")
-        # 初始化数据库服务
-        self.db_service = DatabaseService()
-        # 创建知识库服务实例
-        self.knowledge_service = KnowledgeService(self.api_uri, self.dataset_api_key)
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
-        Convert natural language questions to SQL queries using database schema knowledge base
+        Convert natural language questions to SQL queries, execute them, and return formatted results
         """
         try:
             # 获取参数
@@ -51,7 +57,7 @@ class Text2DataTool(Tool):
             dialect = tool_parameters.get("dialect", "mysql")
             top_k = tool_parameters.get("top_k", 5)
             retrieval_model = tool_parameters.get("retrieval_model", "semantic_search")
-            output_format = tool_parameters.get("output_format", "summary")
+            output_format = tool_parameters.get("output_format", "json")
 
             # 验证必要参数
             if not dataset_id:
@@ -70,37 +76,7 @@ class Text2DataTool(Tool):
                 yield self.create_text_message("错误: 缺少API配置信息")
                 return
 
-            # 步骤1: 从知识库检索相关的schema信息
-            schema_info = self.knowledge_service.retrieve_schema_from_dataset(
-                dataset_id, content, top_k, retrieval_model
-            )
-
-            # 步骤2: 构建预定义的prompt
-            system_prompt = text2sql_prompt._build_system_prompt(dialect, schema_info, content)
-
-            # 步骤3: 调用LLM生成SQL
-            response = self.session.model.llm.invoke(
-                model_config=llm_model,
-                prompt_messages=[
-                    SystemPromptMessage(content=system_prompt),
-                    UserPromptMessage(
-                        content=f"请根据以下问题生成SQL查询：{content}，只要输出最终sql，避免输出任何解释或其他内容。"
-                    ),
-                ],
-                stream=True,
-            )
-
-            sql_result = ""
-            for chunk in response:
-                if chunk.delta.message and chunk.delta.message.content:
-                    sql_content = chunk.delta.message.content
-                    sql_result += sql_content
-
-            # 如果没有流式响应，尝试获取完整响应
-            if not sql_result and hasattr(response, "message") and response.message:
-                sql_result = response.message.content
-
-            # 步骤4: 执行查询
+            # 验证数据库配置
             if not all(
                 [
                     self.db_type,
@@ -111,10 +87,73 @@ class Text2DataTool(Tool):
                     self.db_name,
                 ]
             ):
-                yield self.create_text_message(
-                    "Error: Database configuration is incomplete in the provider."
-                )
+                yield self.create_text_message("错误: 数据库配置不完整")
                 return
+
+            # 步骤1: 从知识库检索相关的schema信息
+            yield self.create_text_message("正在从知识库检索相关的数据库架构信息...")
+
+            try:
+                schema_info = self.knowledge_service.retrieve_schema_from_dataset(
+                    dataset_id, content, top_k, retrieval_model
+                )
+            except Exception as e:
+                yield self.create_text_message(f"检索架构信息时发生错误: {str(e)}")
+                schema_info = "未找到相关的数据库架构信息"
+
+            if not schema_info or schema_info.strip() == "":
+                yield self.create_text_message("警告: 未从知识库检索到相关的架构信息")
+                schema_info = "未找到相关的数据库架构信息"
+
+            # 步骤2: 构建预定义的prompt并生成SQL
+            yield self.create_text_message("正在生成SQL查询...")
+
+            try:
+                system_prompt = text2sql_prompt._build_system_prompt(
+                    dialect, schema_info, content
+                )
+
+                response = self.session.model.llm.invoke(
+                    model_config=llm_model,
+                    prompt_messages=[
+                        SystemPromptMessage(content=system_prompt),
+                        UserPromptMessage(
+                            content=f"请根据以下问题生成SQL查询：{content}，只要输出最终sql，避免输出任何解释或其他内容。"
+                        ),
+                    ],
+                    stream=False,  # 不使用流式响应，确保获取完整SQL
+                )
+
+                # 提取SQL查询
+                sql_query = ""
+                if hasattr(response, "message") and response.message:
+                    sql_query = (
+                        response.message.content.strip()
+                        if response.message.content
+                        else ""
+                    )
+
+                if not sql_query:
+                    yield self.create_text_message("错误: 无法生成SQL查询")
+                    return
+
+                # 清理SQL查询（移除markdown代码块标记等）
+                sql_query = self._clean_sql_query(sql_query)
+
+                if not sql_query or sql_query.strip() == "":
+                    yield self.create_text_message("错误: 生成的SQL查询为空")
+                    return
+
+                yield self.create_text_message(
+                    f"生成的SQL查询:\n```sql\n{sql_query}\n```"
+                )
+
+            except Exception as e:
+                yield self.create_text_message(f"生成SQL查询时发生错误: {str(e)}")
+                return
+
+            # 步骤3: 执行SQL查询
+            yield self.create_text_message("正在执行SQL查询...")
 
             try:
                 results, columns = self.db_service.execute_query(
@@ -124,86 +163,112 @@ class Text2DataTool(Tool):
                     self.db_user,
                     self.db_password,
                     self.db_name,
-                    sql_result,
+                    sql_query,
                 )
             except Exception as e:
-                yield self.create_text_message(
-                    f"Error: Failed to execute query - {str(e)}"
-                )
+                yield self.create_text_message(f"执行SQL查询时发生错误: {str(e)}")
                 return
 
-            results, columns = self.db_service.execute_query(
-                self.db_type,
-                self.db_host,
-                self.db_port,
-                self.db_user,
-                self.db_password,
-                self.db_name,
-                sql_result,
-            )
-
-            # 步骤5: 根据输出格式返回结果
+            # 步骤4: 格式化输出
             if output_format == "summary":
-                yield from self._invoke_data_summary(results, content, llm_model)
+                # 生成数据摘要
+                yield self.create_text_message("正在生成数据摘要...")
+
+                try:
+                    # 先获取JSON格式的数据
+                    json_data = self.db_service._format_output(results, columns, "json")
+
+                    if not json_data or json_data.strip() == "":
+                        yield self.create_text_message(
+                            "警告: 查询结果为空，无法生成摘要"
+                        )
+                        return
+
+                    # 使用LLM生成摘要
+                    summary_system_prompt = summary_prompt._data_summary_prompt(
+                        json_data, content
+                    )
+
+                    summary_response = self.session.model.llm.invoke(
+                        model_config=llm_model,
+                        prompt_messages=[
+                            SystemPromptMessage(content=summary_system_prompt),
+                            UserPromptMessage(content="请根据上述数据生成摘要。"),
+                        ],
+                        stream=True,
+                    )
+
+                    summary_result = ""
+                    for chunk in summary_response:
+                        if chunk.delta.message and chunk.delta.message.content:
+                            summary_content = chunk.delta.message.content
+                            summary_result += summary_content
+                            yield self.create_text_message(text=summary_content)
+
+                    # 如果没有流式响应，尝试获取完整响应
+                    if (
+                        not summary_result
+                        and hasattr(summary_response, "message")
+                        and summary_response.message
+                    ):
+                        summary_result = summary_response.message.content
+                        if summary_result:
+                            yield self.create_text_message(text=summary_result)
+
+                except Exception as e:
+                    yield self.create_text_message(f"生成摘要时发生错误: {str(e)}")
+                    # 如果摘要生成失败，返回原始数据
+                    try:
+                        formatted_output = self.db_service._format_output(
+                            results, columns, "json"
+                        )
+                        yield self.create_text_message(
+                            f"摘要生成失败，返回原始数据:\n{formatted_output}"
+                        )
+                    except Exception as e2:
+                        yield self.create_text_message(f"数据格式化也失败了: {str(e2)}")
             else:
-                formatted_output = self.db_service._format_output(results, columns, output_format)
-                yield self.create_text_message(text=formatted_output)
+                # 返回格式化的数据
+                try:
+                    formatted_output = self.db_service._format_output(
+                        results, columns, output_format
+                    )
+                    yield self.create_text_message(text=formatted_output)
+                except Exception as e:
+                    yield self.create_text_message(f"格式化输出时发生错误: {str(e)}")
 
         except Exception as e:
-            yield self.create_text_message(f"生成SQL时发生错误: {str(e)}")
+            yield self.create_text_message(f"执行过程中发生错误: {str(e)}")
 
-    def _invoke_data_summary(
-        self, data, query, llm_model
-    ) -> Generator[ToolInvokeMessage, None, str]:
+    def _clean_sql_query(self, sql_query: str) -> str:
         """
-        Invoke data summary with streaming response
-
-        Args:
-            data: The data to summarize
-            query: The original user query content
-            llm_model: The LLM model to use
-
-        Yields:
-            ToolInvokeMessage: Streaming text messages
-
-        Returns:
-            str: The complete summary result
+        清理SQL查询，移除markdown代码块标记等不必要的内容
         """
-        # Convert data to JSON string
-        data_content = json.dumps(data, ensure_ascii=False, indent=2)
-        data_summary_prompt = summary_prompt._data_summary_prompt(data_content, query)
+        if not sql_query:
+            return ""
 
-        # Invoke LLM for summarization
-        summary_response = self.session.model.llm.invoke(
-            model_config=llm_model,
-            prompt_messages=[
-                SystemPromptMessage(content="You are a data summarization expert."),
-                UserPromptMessage(content=data_summary_prompt),
-            ],
-            stream=True,
-        )
+        # 移除markdown代码块标记
+        sql_query = re.sub(r"```sql\s*", "", sql_query)
+        sql_query = re.sub(r"```\s*", "", sql_query)
 
-        # Process streaming response
-        summary_result = ""
-        buffer = ""  # Buffer for collecting chunks into meaningful segments
+        # 移除前后空白
+        sql_query = sql_query.strip()
 
-        for chunk in summary_response:
-            if chunk.delta.message and chunk.delta.message.content:
-                content = chunk.delta.message.content
-                summary_result += content
-                buffer += content
+        if not sql_query:
+            return ""
 
-                # Send response when buffer contains complete words/sentences
-                if buffer.endswith((".", "!", "?", "\n")) or len(buffer) > 80:
-                    yield self.create_text_message(text=buffer)
-                    buffer = ""
+        # 如果有多行，只取第一个完整的SQL语句
+        lines = sql_query.split("\n")
+        cleaned_lines = []
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith("--") and not line.startswith("#"):
+                cleaned_lines.append(line)
 
-        # Send any remaining content in buffer
-        if buffer:
-            yield self.create_text_message(text=buffer)
+        # 重新组合SQL
+        if cleaned_lines:
+            sql_query = " ".join(cleaned_lines)
+        else:
+            return ""
 
-        return summary_result
-
-    
-
-
+        return sql_query.strip()
