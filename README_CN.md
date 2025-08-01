@@ -1,11 +1,11 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.0.4-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](https://opensource.org/licenses/MIT)
 
 **作者:** joto  
-**版本:** 0.0.3  
+**版本:** 0.0.4  
 **类型:** 工具
 
 ---
