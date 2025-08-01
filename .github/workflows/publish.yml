@@ -73,7 +73,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           # Use author variable for repository
-          repository: ${{steps.get_basic_info.outputs.author}}/dify-plugins
+          repository: JOTO-Tech/dify-plugins
           path: dify-plugins
           token: ${{ secrets.PLUGIN_ACTION }}
           fetch-depth: 1 # Fetch only the last commit to speed up checkout
