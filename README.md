@@ -2,11 +2,11 @@
 
 [![Version](https://img.shields.io/badge/version-0.0.4-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-orange.svg)](https://opensource.org/licenses/MIT)
 
 **Author:** joto  
 **Version:** 0.0.4  
-**Type:** tool
+**Type:** tool  
+**Repository:** https://github.com/JOTO-AI/SchemaRAG-dify-plugin
 
 ---
 
@@ -53,7 +53,15 @@ uv run main.py
 ### Method 2: Dify Plugin Integration
 
 1. Fill in the above parameters in the Dify platform plugin configuration interface
-2. Save the configuration and drag it into your workflow
+![Plugin Configuration](./_assets/image-1.png)
+
+2. After configuration is complete and accurate, click save to automatically build the configured database schema knowledge base in Dify
+
+3. Add tools in the workflow and configure the knowledge base ID that was just created (the knowledge base ID is in the URL of the knowledge base page)
+![Workflow Node Configuration](./_assets/image-4.png)
+
+4. Provide SQL execution tool, input the generated SQL for direct execution, supports markdown and json output
+![Workflow Node Configuration](./_assets/image-5.png)
 
 ### Method 3: Code Invocation
 
@@ -109,13 +117,13 @@ A: After configuring the database and generating the schema knowledge base, you 
 
 ## 📸 Example Screenshots
 
-![Schema Building Interface](./image/image-0.png)
+![Schema Building Interface](./_assets/image-0.png)
 
-![Workflow Configuration](./image/image-1.png)
+![Workflow Configuration](./_assets/image-1.png)
 
-![Query Results Display](./image/image-2.png)
+![Query Results Display](./_assets/image-2.png)
 
-![Data Summary Report](./image/image-3.png)
+![Data Summary Report](./_assets/image-3.png)
 
 ---
 
@@ -128,4 +136,4 @@ A: After configuring the database and generating the schema knowledge base, you 
 
 ## 📄 License
 
-MIT
+Apache-2.0 license

@@ -2,11 +2,11 @@
 
 [![Version](https://img.shields.io/badge/version-0.0.4-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-orange.svg)](https://opensource.org/licenses/MIT)
 
 **作者:** joto  
 **版本:** 0.0.4  
 **类型:** 工具
+**仓库:** https://github.com/JOTO-AI/SchemaRAG-dify-plugin
 
 ---
 
@@ -53,7 +53,15 @@ uv run main.py
 ### 方式二：Dify 插件集成
 
 1. 在 Dify 平台插件配置界面填写上述参数
-2. 保存配置后即可在工作流中拖入使用
+![插件配置](./_assets/image-1.png)
+
+2. 在配置好，准确无误后点击保存，会自动在dify中构建配置的数据库schema知识库
+
+3. 在工作流中添加工具，并配置刚刚创建的知识库id（知识库id在知识库页面的URL处）
+![工作流节点配置](./_assets/image-4.png)
+
+4. 提供sql执行工具，传入生成的sql可直接执行，支持md，json输出
+![工作流节点配置](./_assets/image-5.png)
 
 ### 方式三：代码调用
 
@@ -110,13 +118,11 @@ A: 在配置好数据库并生成 schema 知识库后，需要在生成的知识
 
 ## 📸 示例截图
 
-![Schema 构建界面](./image/image-0.png)
+![Schema 构建界面](./_assets/image-0.png)
 
-![工作流配置](./image/image-1.png)
+![查询结果展示](./_assets/image-2.png)
 
-![查询结果展示](./image/image-2.png)
-
-![数据总结报告](./image/image-3.png)
+![数据总结报告](./_assets/image-3.png)
 
 ---
 
@@ -129,4 +135,4 @@ A: 在配置好数据库并生成 schema 知识库后，需要在生成的知识
 
 ## 📄 许可证
 
-MIT
+Apache-2.0 license
