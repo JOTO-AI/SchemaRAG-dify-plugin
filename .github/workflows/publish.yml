@@ -89,7 +89,7 @@ jobs:
           ls -la
 
           # Move the packaged file to the target directory using variables
-          mkdir -p dify-plugins/${{ steps.get_basic_info.outputs.author }}/${{ steps.get_basic_info.outputs.plugin_name }}
+          mkdir -p dify-plugins/JOTO-Tech/${{ steps.get_basic_info.outputs.plugin_name }}
           mv "$PACKAGE_NAME" dify-plugins/JOTO-Tech/${{ steps.get_basic_info.outputs.plugin_name }}/
 
           # Enter the target repository directory
