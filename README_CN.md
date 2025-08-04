@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.0.4-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.0.5-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.0.4  
+**版本:** 0.0.5  
 **类型:** 工具
 **仓库:** https://github.com/JOTO-AI/SchemaRAG-dify-plugin
 
@@ -87,15 +87,72 @@ print(result)
 
 ### 1. text2sql 工具
 
-通过配置连接数据库，自动构建数据库 schema 知识库，在工作流中连接知识库即可实现 text2sql 的功能，开箱即用。
+**自然语言转SQL查询工具** - 使用数据库架构知识库将自然语言问题转换为SQL查询
+
+#### 核心功能
+
+- **智能查询转换**: 将自然语言问题自动转换为准确的SQL查询语句
+- **多数据库支持**: 支持MySQL和PostgreSQL两种SQL方言
+- **知识库检索**: 基于数据库架构知识库进行智能检索和匹配
+- **开箱即用**: 配置好知识库即可直接使用，无需额外设置
+
+#### 参数说明
+
+| 参数名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| dataset_id | string | 是 | 包含数据库架构的Dify知识库ID |
+| llm | model-selector | 是 | 用于生成SQL的大语言模型 |
+| content | string | 是 | 要转换为SQL的自然语言问题 |
+| dialect | select | 是 | SQL方言（MySQL/PostgreSQL）|
+| top_k | number | 否 | 从知识库检索的结果数量（默认5）|
 
 ### 2. sql_executer 工具
 
-提供安全的接口在 Dify 工作流中实现数据库查询的功能，可以指定 markdown 和 json 两种输出格式。
+**SQL查询执行工具** - 安全执行SQL查询并返回格式化结果
 
-### 3. text2data 工具
+#### 核心功能
+
+- **安全执行**: 仅支持SELECT查询，确保数据安全
+- **多格式输出**: 支持JSON和Markdown两种输出格式
+- **直接连接**: 直接连接数据库执行查询，实时获取结果
+- **错误处理**: 完善的错误处理机制，提供详细的错误信息
+
+#### 参数说明
+
+| 参数名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| sql | string | 是 | 要执行的SQL查询语句 |
+| output_format | select | 是 | 输出格式（JSON/Markdown）|
+
+### 3. text2data 工具（删除）
+
+**注意：**
+此插件在v0.0.5移除，原因是在dify版本1.7.1使用此插件会导致工作流前端崩溃，后续dify会修复[dify issue](https://github.com/langgenius/dify/issues/23154)。请注意版本慎用此工具。
 
 封装上述两种工具，开箱即用，增加 LLM 总结功能，将查询的数据总结成报告输出。
+
+### 4. data_summary 工具
+
+**数据总结分析工具** - 使用大语言模型对数据内容进行智能分析和总结
+
+#### 分析能力
+
+- **多种分析类型**: 支持摘要、洞察、趋势、模式、综合分析
+- **自定义规则**: 支持用户定义分析规则和指导原则
+- **灵活输出格式**: 结构化、叙述式、要点列表、表格四种输出格式
+- **数据格式智能识别**: 自动识别JSON等数据格式并优化处理
+- **性能优化**: 缓存常用配置，减少响应时间
+
+#### 配置选项
+
+| 参数名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| data_content | string | 是 | 需要分析的数据内容 |
+| llm | model-selector | 是 | 用于分析的大语言模型 |
+| query | string | 是 | 分析查询或关注领域 |
+| custom_rules | string | 否 | 自定义分析规则 |
+| analysis_type | select | 否 | 分析类型（摘要/洞察/趋势/模式/综合）|
+| output_format | select | 否 | 输出格式（结构化/叙述式/要点/表格）|
 
 
 ---
@@ -113,6 +170,15 @@ A: 在 Dify 插件页面中配置数据库和知识库相关信息，配置完�
 
 **Q: 如何使用 text2sql 工具？**  
 A: 在配置好数据库并生成 schema 知识库后，需要在生成的知识库 URL 中获取 dataset_id 并填入工具中，指定索引的知识库，并且配置好其他信息即可使用。
+
+**Q: data_summary 工具支持哪些数据格式？**  
+A: 支持文本、JSON 等多种数据格式，工具会自动识别并优化处理。支持最大 50,000 字符的数据内容。
+
+**Q: 如何选择合适的分析类型？**  
+A: 根据需求选择：摘要（简洁概括）、洞察（深入发现）、趋势（变化分析）、模式（规律识别）、综合（全面分析）。
+
+**Q: 自定义规则如何使用？**  
+A: 可以在 custom_rules 参数中指定特定的分析要求、关注点或约束条件，最大支持 2,000 字符。
 
 ---
 
