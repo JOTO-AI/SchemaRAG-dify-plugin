@@ -1,0 +1,153 @@
+identity:
+  name: data_summary
+  author: joto
+  label:
+    en_US: Data Summary
+    zh_Hans: 数据总结
+    pt_BR: Data Summary
+ 
+description:
+  human:
+    en_US: Analyze and summarize data content with customizable rules and insights
+    zh_Hans: 使用可自定义规则分析和总结数据内容，提供洞察
+    pt_BR: Analyze and summarize data content with customizable rules and insights
+  llm: A tool that analyzes data content and provides concise summaries, insights, and analysis with optional custom rules
+
+parameters:
+  - name: data_content
+    type: string
+    required: true
+    label:
+      en_US: Data Content
+      zh_Hans: 数据内容
+      pt_BR: Data Content
+    human_description:
+      en_US: The data content to be analyzed and summarized
+      zh_Hans: 需要分析和总结的数据内容
+      pt_BR: The data content to be analyzed and summarized
+    llm_description: The raw data content that needs to be analyzed and summarized
+    form: llm
+
+  - name: llm
+    type: model-selector
+    scope: llm
+    required: true
+    label:
+      en_US: LLM Model
+      zh_Hans: 大语言模型
+      pt_BR: LLM Model
+    human_description:
+      en_US: The large language model to use for data analysis and summarization
+      zh_Hans: 用于数据分析和总结的大语言模型
+      pt_BR: The large language model to use for data analysis and summarization
+    llm_description: The LLM model to use for generating data summaries and insights
+    form: form
+
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Analysis Query
+      zh_Hans: 分析查询
+      pt_BR: Analysis Query
+    human_description:
+      en_US: Specific question or focus area for the data analysis
+      zh_Hans: 数据分析的具体问题或关注领域（通常是sys.query）
+      pt_BR: Specific question or focus area for the data analysis
+    llm_description: The specific question or analysis focus to guide data summarization
+    form: llm
+
+  - name: custom_rules
+    type: string
+    required: false
+    label:
+      en_US: Custom Rules
+      zh_Hans: 自定义规则
+      pt_BR: Custom Rules
+    human_description:
+      en_US: Optional custom rules or guidelines for data analysis
+      zh_Hans: 可选的数据分析自定义规则或指导原则
+      pt_BR: Optional custom rules or guidelines for data analysis
+    llm_description: Additional custom rules or specific requirements for the data analysis and summarization process
+    form: llm
+
+  - name: analysis_type
+    type: select
+    required: false
+    label:
+      en_US: Analysis Type
+      zh_Hans: 分析类型
+      pt_BR: Analysis Type
+    human_description:
+      en_US: The type of analysis to perform on the data
+      zh_Hans: 对数据执行的分析类型
+      pt_BR: The type of analysis to perform on the data
+    llm_description: The specific type of analysis approach to use for data summarization
+    form: form
+    options:
+      - value: summary
+        label:
+          en_US: Summary
+          zh_Hans: 摘要
+          pt_BR: Summary
+      - value: insights
+        label:
+          en_US: Insights
+          zh_Hans: 洞察
+          pt_BR: Insights
+      - value: trends
+        label:
+          en_US: Trends
+          zh_Hans: 趋势
+          pt_BR: Trends
+      - value: patterns
+        label:
+          en_US: Patterns
+          zh_Hans: 模式
+          pt_BR: Patterns
+      - value: comprehensive
+        label:
+          en_US: Comprehensive
+          zh_Hans: 综合
+          pt_BR: Comprehensive
+    default: comprehensive
+
+  - name: output_format
+    type: select
+    required: false
+    label:
+      en_US: Output Format
+      zh_Hans: 输出格式
+      pt_BR: Output Format
+    human_description:
+      en_US: The format for the analysis output
+      zh_Hans: 分析输出的格式
+      pt_BR: The format for the analysis output
+    llm_description: The desired format for presenting the data analysis results
+    form: form
+    options:
+      - value: structured
+        label:
+          en_US: Structured
+          zh_Hans: 结构化
+          pt_BR: Structured
+      - value: narrative
+        label:
+          en_US: Narrative
+          zh_Hans: 叙述式
+          pt_BR: Narrative
+      - value: bullet_points
+        label:
+          en_US: Bullet Points
+          zh_Hans: 要点列表
+          pt_BR: Bullet Points
+      - value: table
+        label:
+          en_US: Table
+          zh_Hans: 表格
+          pt_BR: Table
+    default: structured
+
+extra:
+  python:
+    source: tools/data_summary.py

@@ -126,7 +126,8 @@ supported_app_types:
 tools:
   - tools/text2sql.yaml
   - tools/sql_executer.yaml
-  - tools/text2data.yaml
+  - tools/data_summary.yaml
+  # - tools/text2data.yaml
 extra:
   python:
     source: provider/build_schema_rag.py
