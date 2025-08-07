@@ -4,7 +4,7 @@ import sys
 import os
 import json
 import logging
-from prompt.summary_prompt import _data_summary_prompt, _build_data_summary_system_prompt
+from prompt.summary_prompt import _data_summary_prompt
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
@@ -24,30 +24,7 @@ class DataSummaryTool(Tool):
     MAX_DATA_LENGTH = 50000  # 最大数据内容长度
     MAX_RULES_LENGTH = 2000  # 最大自定义规则长度
     
-    # 支持的分析焦点类型
-    ANALYSIS_FOCUS_TYPES = [
-        "general", "financial", "operational", 
-        "customer", "sales", "marketing"
-    ]
-    
-    # 缓存常用的映射关系，避免重复创建
-    ANALYSIS_TYPE_GUIDANCE = {
-        "summary": "请提供数据的简洁摘要。",
-        "insights": "请重点提供深入的洞察和发现。",
-        "trends": "请重点分析数据中的趋势变化。", 
-        "patterns": "请重点识别数据中的模式和规律。",
-        "comprehensive": "请提供全面综合的分析。"
-    }
-    
-    ANALYSIS_FOCUS_MAP = {
-        "summary": "general",
-        "insights": "general", 
-        "trends": "general",
-        "patterns": "general",
-        "comprehensive": "general"
-    }
-    
-    VALID_ANALYSIS_TYPES = {"summary", "insights", "trends", "patterns", "comprehensive"}
+    # 已移除分析类型和输出结构相关常量
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,7 +81,7 @@ class DataSummaryTool(Tool):
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
-        执行数据摘要分析
+        执行数据摘要分析（已移除分析类型和输出结构参数，支持自定义prompt）
         """
         try:
             # 获取参数
@@ -112,31 +89,20 @@ class DataSummaryTool(Tool):
             query = tool_parameters.get("query", "")
             llm_model = tool_parameters.get("llm")
             custom_rules = tool_parameters.get("custom_rules", "")
-            analysis_type = tool_parameters.get("analysis_type", "comprehensive")
-            output_format = tool_parameters.get("output_format", "structured")
-            # 数据格式自动检测
+            user_prompt = tool_parameters.get("user_prompt", "")  # 新增：支持用户自定义prompt
             data_format = "auto"
-         
 
             # 验证必要参数
             if not llm_model:
                 self.logger.error("错误: 缺少LLM模型配置")
                 return
 
-            # 验证输入数据
             is_valid, error_message = self._validate_input_data(data_content, query, custom_rules)
             if not is_valid:
                 self.logger.error(f"输入验证失败: {error_message}")
                 return
 
-            # 验证分析类型 - 使用集合提高查找效率
-            if analysis_type not in self.VALID_ANALYSIS_TYPES:
-                self.logger.warning(f"未知的分析类型: {analysis_type}，使用默认类型")
-                analysis_type = "comprehensive"
-
-            self.logger.info("开始分析数据内容...")
-
-            # 格式化数据内容 - 简化异常处理
+            # 格式化数据内容
             try:
                 formatted_data = self._format_data_content(data_content, data_format)
                 self.logger.info("数据格式化完成")
@@ -149,29 +115,27 @@ class DataSummaryTool(Tool):
             if was_truncated:
                 self.logger.info("注意: 数据内容过长，已自动截断部分内容进行分析")
 
-            # 构建分析提示词 - 优化分支逻辑
-            use_custom_rules = custom_rules and custom_rules.strip()
-            
-            if use_custom_rules:
-                # 如果有自定义规则，使用自定义规则构建提示词
+            # 构建prompt逻辑
+            if user_prompt and user_prompt.strip():
+                # 用户自定义prompt优先
+                system_prompt_content = "你是一个专业的数据分析专家，请根据用户自定义的分析指令和数据进行分析。"
+                user_prompt_content = user_prompt.replace("{{data}}", final_data).replace("{{query}}", query)
+                self.logger.info("使用用户自定义prompt")
+            elif custom_rules and custom_rules.strip():
+                # 有自定义规则
                 analysis_prompt = _data_summary_prompt(final_data, query, custom_rules)
-                self.logger.info("使用自定义规则构建分析提示词")
                 system_prompt_content = "你是一个专业的数据分析专家，请根据提供的规则和数据进行深入分析。"
                 user_prompt_content = analysis_prompt
+                self.logger.info("使用自定义规则构建分析prompt")
             else:
-                # 使用标准提示词 - 使用缓存的映射关系
-                analysis_focus = self.ANALYSIS_FOCUS_MAP[analysis_type]
-                system_prompt_content = _build_data_summary_system_prompt(analysis_focus)
-                
-                # 使用缓存的指导信息
-                type_guidance = self.ANALYSIS_TYPE_GUIDANCE[analysis_type]
-                user_prompt_content = f"【查询】{query}\n\n【数据】{final_data}\n\n【分析要求】{type_guidance}"
-                
-                self.logger.info(f"使用标准分析框架构建提示词 (类型: {analysis_type})")
+                # 默认prompt
+                analysis_prompt = _data_summary_prompt(final_data, query)
+                system_prompt_content = "你是一个专业的数据分析专家，请根据数据和问题进行分析。"
+                user_prompt_content = analysis_prompt
+                self.logger.info("使用默认分析prompt")
 
             self.logger.info("正在调用大语言模型进行数据分析...")
 
-            # 调用LLM进行分析 - 简化重复代码
             try:
                 response = self.session.model.llm.invoke(
                     model_config=llm_model,
@@ -179,14 +143,29 @@ class DataSummaryTool(Tool):
                         SystemPromptMessage(content=system_prompt_content),
                         UserPromptMessage(content=user_prompt_content)
                     ],
-                    stream=False,
+                    stream=True,
                 )
-                analysis_result = response.message.content
+                has_streamed_content = False
+                total_content_length = 0
 
-                self.logger.info("数据分析完成！")
-                
-                # 返回分析结果 - 使用简化的格式
-                yield self.create_text_message(f"## 数据分析报告\n\n{analysis_result}")
+                for chunk in response:
+                    if chunk.delta.message and chunk.delta.message.content:
+                        content = chunk.delta.message.content
+                        has_streamed_content = True
+                        total_content_length += len(content)
+                        if total_content_length > 50000:
+                            yield self.create_text_message("警告: 响应内容过长，已截断")
+                            break
+                        yield self.create_text_message(text=content)
+
+                if (
+                    not has_streamed_content
+                    and hasattr(response, "message")
+                    and response.message
+                ):
+                    yield self.create_text_message(text=response.message.content)
+
+                self.logger.info(f"数据分析完成，响应长度: {total_content_length}")
 
             except Exception as e:
                 error_msg = f"调用LLM时发生错误: {str(e)}"
