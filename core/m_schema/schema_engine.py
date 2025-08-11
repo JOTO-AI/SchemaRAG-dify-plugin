@@ -144,13 +144,20 @@ class SchemaEngine(SQLDatabase):
             table_comment = self.get_table_comment(table_name)
             table_comment = (
                 "" if table_comment is None else table_comment.strip()
-            )  # For MySQL, avoid duplicate schema name in table identifier
-            # For PostgreSQL, include schema name if it's not 'public'
+            )  # For different database types, handle schema naming
             schema_name = self._tables_schemas[table_name]
-            if self._engine.dialect.name == "mysql" and schema_name == self._db_name:
+            dialect_name = self._engine.dialect.name
+
+            if dialect_name == "mysql" and schema_name == self._db_name:
                 table_with_schema = table_name
-            elif self._engine.dialect.name == "postgresql" and schema_name == "public":
+            elif dialect_name == "postgresql" and schema_name == "public":
                 table_with_schema = table_name
+            elif dialect_name in ["mssql", "oracle", "dameng"]:
+                # For SQL Server, Oracle, and Dameng, include schema if not default
+                if schema_name and schema_name.lower() not in ["dbo", "public", "main"]:
+                    table_with_schema = schema_name + "." + table_name
+                else:
+                    table_with_schema = table_name
             else:
                 table_with_schema = schema_name + "." + table_name
             self._mschema.add_table(table_with_schema, fields={}, comment=table_comment)

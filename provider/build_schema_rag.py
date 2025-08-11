@@ -21,6 +21,19 @@ class SchemaRAGBuilderProvider(ToolProvider):
     Schema RAG Builder Provider
     """
 
+    def _get_default_port(self, db_type: str) -> int:
+        """
+        根据数据库类型获取默认端口
+        """
+        port_mapping = {
+            "mysql": 3306,
+            "postgresql": 5432,
+            "mssql": 1433,
+            "oracle": 1521,
+            "dameng": 5236,
+        }
+        return port_mapping.get(db_type, 3306)
+
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """
         Validate the credentials and build schema RAG
@@ -30,7 +43,6 @@ class SchemaRAGBuilderProvider(ToolProvider):
         dataset_api_key = credentials.get("dataset_api_key")
         db_type = credentials.get("db_type")
         db_host = credentials.get("db_host")
-        db_port = credentials.get("db_port")
         db_user = credentials.get("db_user")
         db_password = credentials.get("db_password")
         db_name = credentials.get("db_name")
@@ -46,20 +58,23 @@ class SchemaRAGBuilderProvider(ToolProvider):
         if not db_type:
             raise ValueError("Database type is required")
 
-        if not db_host:
-            raise ValueError("Database host is required")
+        # SQLite 只需要数据库名称（文件路径）
+        if db_type == "sqlite":
+            if not db_name:
+                raise ValueError("Database name (file path) is required for SQLite")
+        else:
+            # 其他数据库类型需要完整的连接信息
+            if not db_host:
+                raise ValueError("Database host is required")
 
-        if not db_port:
-            raise ValueError("Database port is required")
+            if not db_user:
+                raise ValueError("Database user is required")
 
-        if not db_user:
-            raise ValueError("Database user is required")
+            if not db_password:
+                raise ValueError("Database password is required")
 
-        if not db_password:
-            raise ValueError("Database password is required")
-
-        if not db_name:
-            raise ValueError("Database name is required")
+            if not db_name:
+                raise ValueError("Database name is required")
 
         # 凭据验证成功后，自动构建schema知识库
         self._build_schema_rag(credentials)
@@ -77,14 +92,35 @@ class SchemaRAGBuilderProvider(ToolProvider):
             os.makedirs(logs_dir, exist_ok=True)
 
             # 创建数据库配置
-            db_config = DatabaseConfig(
-                type=credentials.get("db_type"),
-                host=credentials.get("db_host"),
-                port=int(credentials.get("db_port", 3306)),
-                user=credentials.get("db_user"),
-                password=credentials.get("db_password"),
-                database=credentials.get("db_name"),
-            )
+            db_type = credentials.get("db_type")
+            default_port = self._get_default_port(db_type)
+            db_port = credentials.get("db_port")
+
+            # 如果用户没有提供端口或端口为空，使用默认端口
+            if not db_port:
+                port = default_port
+            else:
+                port = int(db_port)
+
+            # 对于 SQLite，使用默认值处理缺失的字段
+            if db_type == "sqlite":
+                db_config = DatabaseConfig(
+                    type=db_type,
+                    host="localhost",  # SQLite 不使用，但为了兼容性设置默认值
+                    port=0,  # SQLite 不使用端口
+                    user="",  # SQLite 不需要用户名
+                    password="",  # SQLite 不需要密码
+                    database=credentials.get("db_name"),  # SQLite 的文件路径
+                )
+            else:
+                db_config = DatabaseConfig(
+                    type=db_type,
+                    host=credentials.get("db_host"),
+                    port=port,
+                    user=credentials.get("db_user"),
+                    password=credentials.get("db_password"),
+                    database=credentials.get("db_name"),
+                )
 
             # 创建日志配置
             logger_config = LoggerConfig(
@@ -110,10 +146,11 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 os.makedirs(output_dir, exist_ok=True)
 
                 # 生成数据字典
-                schema_file_path = os.path.join(
-                    output_dir, f"{db_config.database}_schema.md"
-                )
-                schema_content = builder.generate_dictionary(schema_file_path)
+                # schema_file_path = os.path.join(
+                #     output_dir, f"{db_config.database}_schema.md"
+                # )
+                schema_content = builder.generate_dictionary()
+                # logging.info(f"📄 生成的Schema内容: {schema_content} ")
 
                 # 记录成功信息
                 table_count = schema_content.count("#") if schema_content else 0

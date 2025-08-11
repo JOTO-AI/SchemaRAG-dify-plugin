@@ -58,6 +58,21 @@ credentials_for_provider:
           en_US: PostgreSQL
           zh_Hans: PostgreSQL
           pt_BR: PostgreSQL
+      - value: mssql
+        label:
+          en_US: Microsoft SQL Server
+          zh_Hans: Microsoft SQL Server
+          pt_BR: Microsoft SQL Server
+      - value: oracle
+        label:
+          en_US: Oracle
+          zh_Hans: Oracle
+          pt_BR: Oracle
+      - value: dameng
+        label:
+          en_US: Dameng
+          zh_Hans: 达梦数据库
+          pt_BR: Dameng
 
   db_host:
     type: text-input
@@ -67,9 +82,9 @@ credentials_for_provider:
       zh_Hans: 数据库主机
       pt_BR: Database Host
     placeholder:
-      en_US: Please input your database host
-      zh_Hans: 请输入数据库主机地址
-      pt_BR: Please input your database host
+      en_US: Database host address
+      zh_Hans: 数据库主机地址 
+      pt_BR: Database host address
 
   db_port:
     type: text-input
@@ -79,9 +94,9 @@ credentials_for_provider:
       zh_Hans: 数据库端口
       pt_BR: Database Port
     placeholder:
-      en_US: Please input your database port
-      zh_Hans: 请输入数据库端口
-      pt_BR: Please input your database port
+      en_US: "Please input your database port (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, Dameng:5236)"
+      zh_Hans: "请输入数据库端口 (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, 达梦:5236)"
+      pt_BR: "Please input your database port (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, Dameng:5236)"
     default: "3306"
 
   db_user:
@@ -92,9 +107,9 @@ credentials_for_provider:
       zh_Hans: 数据库用户名
       pt_BR: Database User
     placeholder:
-      en_US: Please input your database username
-      zh_Hans: 请输入数据库用户名
-      pt_BR: Please input your database username
+      en_US: Database username 
+      zh_Hans: 数据库用户名
+      pt_BR: Database username 
 
   db_password:
     type: secret-input
@@ -104,9 +119,9 @@ credentials_for_provider:
       zh_Hans: 数据库密码
       pt_BR: Database Password
     placeholder:
-      en_US: Please input your database password
-      zh_Hans: 请输入数据库密码
-      pt_BR: Please input your database password
+      en_US: Database password 
+      zh_Hans: 数据库密码
+      pt_BR: Database password 
 
   db_name:
     type: text-input
@@ -116,9 +131,9 @@ credentials_for_provider:
       zh_Hans: 数据库名称
       pt_BR: Database Name
     placeholder:
-      en_US: Please input your database name
-      zh_Hans: 请输入数据库名称
-      pt_BR: Please input your database name
+      en_US: Database name
+      zh_Hans: 数据库名称
+      pt_BR: Database name
 
 supported_app_types:
   - workflow

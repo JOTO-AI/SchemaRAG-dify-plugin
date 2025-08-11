@@ -71,82 +71,20 @@ parameters:
     llm_description: Additional custom rules or specific requirements for the data analysis and summarization process
     form: llm
 
-  - name: analysis_type
-    type: select
-    required: false
-    label:
-      en_US: Analysis Type
-      zh_Hans: 分析类型
-      pt_BR: Analysis Type
-    human_description:
-      en_US: The type of analysis to perform on the data
-      zh_Hans: 对数据执行的分析类型
-      pt_BR: The type of analysis to perform on the data
-    llm_description: The specific type of analysis approach to use for data summarization
-    form: form
-    options:
-      - value: summary
-        label:
-          en_US: Summary
-          zh_Hans: 摘要
-          pt_BR: Summary
-      - value: insights
-        label:
-          en_US: Insights
-          zh_Hans: 洞察
-          pt_BR: Insights
-      - value: trends
-        label:
-          en_US: Trends
-          zh_Hans: 趋势
-          pt_BR: Trends
-      - value: patterns
-        label:
-          en_US: Patterns
-          zh_Hans: 模式
-          pt_BR: Patterns
-      - value: comprehensive
-        label:
-          en_US: Comprehensive
-          zh_Hans: 综合
-          pt_BR: Comprehensive
-    default: comprehensive
 
-  - name: output_format
-    type: select
+  - name: user_prompt
+    type: string
     required: false
     label:
-      en_US: Output Format
-      zh_Hans: 输出格式
-      pt_BR: Output Format
+      en_US: Custom Prompt
+      zh_Hans: 自定义Prompt
+      pt_BR: Custom Prompt
     human_description:
-      en_US: The format for the analysis output
-      zh_Hans: 分析输出的格式
-      pt_BR: The format for the analysis output
-    llm_description: The desired format for presenting the data analysis results
-    form: form
-    options:
-      - value: structured
-        label:
-          en_US: Structured
-          zh_Hans: 结构化
-          pt_BR: Structured
-      - value: narrative
-        label:
-          en_US: Narrative
-          zh_Hans: 叙述式
-          pt_BR: Narrative
-      - value: bullet_points
-        label:
-          en_US: Bullet Points
-          zh_Hans: 要点列表
-          pt_BR: Bullet Points
-      - value: table
-        label:
-          en_US: Table
-          zh_Hans: 表格
-          pt_BR: Table
-    default: structured
+      en_US: Optional custom prompt for LLM, supports {{data}} and {{query}} placeholders
+      zh_Hans: 可选的自定义LLM分析指令，支持{{data}}和{{query}}占位符
+      pt_BR: Optional custom prompt for LLM, supports {{data}} and {{query}} placeholders
+    llm_description: User-defined prompt for LLM, {{data}} will be replaced by data_content, {{query}} by query
+    form: llm
 
 extra:
   python:
