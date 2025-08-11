@@ -1,10 +1,10 @@
 # SchemaRAG Database Schema RAG Plugin
 
-[![Version](https://img.shields.io/badge/version-0.0.5-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.0.6-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **Author:** joto  
-**Version:** 0.0.5  
+**Version:** 0.0.6  
 **Type:** tool  
 **Repository:** https://github.com/JOTO-AI/SchemaRAG-dify-plugin
 
@@ -139,7 +139,7 @@ print(result)
 ### 3. text2data Tool (Removed)
 
 **Notice:**
-This plugin was removed in v0.0.5 because using this plugin in Dify version 1.7.1 will cause the workflow front-end to crash. The subsequent Dify will fix [dify issue](https://github.com/langgenius/dify/issues/23154). Please be careful with this tool.
+This plugin was removed in v0.0.6 because using this plugin in Dify version 1.7.1 will cause the workflow front-end to crash. The subsequent Dify will fix [dify issue](https://github.com/langgenius/dify/issues/23154). Please be careful with this tool.
 
 Encapsulates the above two tools, ready to use out of the box, with added LLM summarization functionality to summarize query data into reports.
 
