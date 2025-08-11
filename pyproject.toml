@@ -17,7 +17,7 @@ dependencies = [
     # 额外的数据库驱动
     "pymssql",
     "cx-Oracle",
-    "dameng-python",  # 达梦数据库驱动，如果需要的话取消注释
+    # "dameng-python",  # 达梦数据库驱动，如果需要的话取消注释
 ]
 
 [build-system]
