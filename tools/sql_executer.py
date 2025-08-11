@@ -68,7 +68,7 @@ class SQLExecuterTool(Tool):
                 "db_password": credentials.get("db_password"),
                 "db_name": credentials.get("db_name"),
             }
-            self.MAX_RESULT_ROWS=credentials.get("max_line", 500)
+            self.MAX_RESULT_ROWS = credentials.get("max_line", 500)
             # 验证配置完整性
             self._config_validated = all(
                 value is not None for value in self._db_config.values()

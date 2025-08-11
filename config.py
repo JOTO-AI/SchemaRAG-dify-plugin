@@ -45,6 +45,13 @@ class DatabaseConfig:
             return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "mysql":
             return f"mysql+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        elif self.type == "mssql":
+            return f"mssql+pymssql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        elif self.type == "oracle":
+            return f"oracle+cx_Oracle://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        # 达梦
+        elif self.type == "dameng":
+            return f"dm+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
         else:
             raise ValueError(f"Unsupported database type: {self.type}")
 

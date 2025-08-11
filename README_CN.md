@@ -18,7 +18,7 @@ SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够�
 
 ## ✨ 核心功能
 
-- **多数据库支持**: MySQL & PostgreSQL，自动适配语法差异
+- **多数据库支持**: MySQL, PostgreSQL, MSSQL, Oracle, 达梦自动适配语法差异
 - **架构自动分析**: 一键生成数据字典，结构可视化
 - **知识库上传**: 自动上传到 Dify，支持增量更新
 - **自然语言转SQL**: 开箱即用，支持复杂查询
@@ -32,13 +32,23 @@ SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够�
 | 参数名            | 类型     | 必填 | 说明                         | 示例                      |
 |------------------|----------|------|------------------------------|---------------------------|
 | Dataset API Key  | secret   | 是   | Dify知识库API密钥             | dataset-xxx               |
-| Database Type    | select   | 是   | 数据库类型 MySQL/PostgreSQL   | MySQL                     |
+| Database Type    | select   | 是   | 数据库类型 MySQL/PostgreSQL... | MySQL                     |
 | Database Host    | string   | 是   | 数据库主机/IP                 | 127.0.0.1                 |
 | Database Port    | number   | 是   | 数据库端口                    | 3306/5432                 |
 | Database User    | string   | 是   | 数据库用户名                  | root                      |
 | Database Password| secret   | 是   | 数据库密码                    | ******                    |
 | Database Name    | string   | 是   | 数据库名称                    | mydb                      |
 | Dify Base URL    | string   | 否   | Dify API基础URL               | `https://api.dify.ai/v1`  |
+
+## 支持的数据库类型
+
+| 数据库类型 | 默认端口 | 驱动程序 | 连接字符串格式 |
+|------------|----------|----------|----------------|
+| MySQL | 3306 | pymysql | `mysql+pymysql://user:password@host:port/database` |
+| PostgreSQL | 5432 | psycopg2-binary | `postgresql://user:password@host:port/database` |
+| Microsoft SQL Server | 1433 | pymssql | `mssql+pymssql://user:password@host:port/database` |
+| Oracle | 1521 | cx-Oracle | `oracle+cx_Oracle://user:password@host:port/database` |
+| 达梦数据库 | 5236 | dm+pymysql | `dm+pymysql://user:password@host:port/database` |
 
 ---
 
@@ -113,6 +123,7 @@ print(result)
 #### 核心功能
 
 - **安全执行**: 仅支持SELECT查询，确保数据安全
+- **最大输出控制**： 提供接口控制最大查询行数，方式查询数据过多。
 - **多格式输出**: 支持JSON和Markdown两种输出格式
 - **直接连接**: 直接连接数据库执行查询，实时获取结果
 - **错误处理**: 完善的错误处理机制，提供详细的错误信息
@@ -123,6 +134,7 @@ print(result)
 |--------|------|------|------|
 | sql | string | 是 | 要执行的SQL查询语句 |
 | output_format | select | 是 | 输出格式（JSON/Markdown）|
+| max_line | int | 否 | 查询到的最大行数（默认1000行）|
 
 ### 3. text2data 工具（删除）
 
@@ -137,9 +149,7 @@ print(result)
 
 #### 分析能力
 
-- **多种分析类型**: 支持摘要、洞察、趋势、模式、综合分析
 - **自定义规则**: 支持用户定义分析规则和指导原则
-- **灵活输出格式**: 结构化、叙述式、要点列表、表格四种输出格式
 - **数据格式智能识别**: 自动识别JSON等数据格式并优化处理
 - **性能优化**: 缓存常用配置，减少响应时间
 
@@ -151,16 +161,14 @@ print(result)
 | llm | model-selector | 是 | 用于分析的大语言模型 |
 | query | string | 是 | 分析查询或关注领域 |
 | custom_rules | string | 否 | 自定义分析规则 |
-| analysis_type | select | 否 | 分析类型（摘要/洞察/趋势/模式/综合）|
-| output_format | select | 否 | 输出格式（结构化/叙述式/要点/表格）|
-
+| user_prompt | string | 否 | 自定义prompt |
 
 ---
 
 ## ❓ 常见问题
 
 **Q: 支持哪些数据库？**  
-A: 当前支持 MySQL 和 PostgreSQL。
+A: 当前支持 MySQL, PostgreSQL, MSSQL, Oracle, 达梦 。
 
 **Q: 数据是否安全？**  
 A: 插件仅读取数据库结构信息，构建 Dify 知识库，敏感信息不会上传。
@@ -173,9 +181,6 @@ A: 在配置好数据库并生成 schema 知识库后，需要在生成的知识
 
 **Q: data_summary 工具支持哪些数据格式？**  
 A: 支持文本、JSON 等多种数据格式，工具会自动识别并优化处理。支持最大 50,000 字符的数据内容。
-
-**Q: 如何选择合适的分析类型？**  
-A: 根据需求选择：摘要（简洁概括）、洞察（深入发现）、趋势（变化分析）、模式（规律识别）、综合（全面分析）。
 
 **Q: 自定义规则如何使用？**  
 A: 可以在 custom_rules 参数中指定特定的分析要求、关注点或约束条件，最大支持 2,000 字符。

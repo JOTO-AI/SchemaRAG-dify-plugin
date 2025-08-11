@@ -1,5 +1,4 @@
 import os
-import logging
 from typing import Optional
 import sys
 
@@ -12,7 +11,7 @@ from sqlalchemy import create_engine
 from core.m_schema.schema_engine import SchemaEngine
 from config import DatabaseConfig, DifyUploadConfig, LoggerConfig
 from service.dify_service import DifyUploader
-from utils import Logger, read_json, save_raw_text
+from utils import Logger, read_json
 
 
 class SchemaRAGBuilder:

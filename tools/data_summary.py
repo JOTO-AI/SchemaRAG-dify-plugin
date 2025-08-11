@@ -23,29 +23,31 @@ class DataSummaryTool(Tool):
     # 配置常量
     MAX_DATA_LENGTH = 50000  # 最大数据内容长度
     MAX_RULES_LENGTH = 2000  # 最大自定义规则长度
-    
+
     # 已移除分析类型和输出结构相关常量
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
 
-    def _validate_input_data(self, data_content: str, query: str, custom_rules: Optional[str] = None) -> tuple[bool, str]:
+    def _validate_input_data(
+        self, data_content: str, query: str, custom_rules: Optional[str] = None
+    ) -> tuple[bool, str]:
         """
         验证输入数据的有效性
         """
         if not data_content or not data_content.strip():
             return False, "数据内容不能为空"
-        
+
         if not query or not query.strip():
             return False, "分析查询不能为空"
-        
+
         if len(data_content) > self.MAX_DATA_LENGTH:
             return False, f"数据内容过长，最大支持 {self.MAX_DATA_LENGTH} 字符"
-        
+
         if custom_rules and len(custom_rules) > self.MAX_RULES_LENGTH:
             return False, f"自定义规则过长，最大支持 {self.MAX_RULES_LENGTH} 字符"
-        
+
         return True, ""
 
     def _format_data_content(self, data_content: str, data_format: str = "auto") -> str:
@@ -53,30 +55,34 @@ class DataSummaryTool(Tool):
         格式化数据内容，尝试解析不同的数据格式 - 优化版本
         """
         # 快速检查是否需要JSON格式化
-        if data_format == "json" or (data_format == "auto" and data_content.lstrip().startswith(('{', '['))):
+        if data_format == "json" or (
+            data_format == "auto" and data_content.lstrip().startswith(("{", "["))
+        ):
             try:
                 parsed_data = json.loads(data_content)
                 return json.dumps(parsed_data, indent=2, ensure_ascii=False)
             except json.JSONDecodeError:
                 pass
-        
+
         # 返回去除首尾空白的原始内容
         return data_content.strip()
 
-    def _truncate_data_if_needed(self, data_content: str, max_length: int = None) -> tuple[str, bool]:
+    def _truncate_data_if_needed(
+        self, data_content: str, max_length: int = None
+    ) -> tuple[str, bool]:
         """
         如果数据过长则截断，返回截断后的数据和是否被截断的标志
         """
         if max_length is None:
             max_length = self.MAX_DATA_LENGTH
-        
+
         if len(data_content) <= max_length:
             return data_content, False
-        
+
         # 截断数据并添加提示
-        truncated_data = data_content[:max_length - 100]  # 预留空间给提示信息
+        truncated_data = data_content[: max_length - 100]  # 预留空间给提示信息
         truncated_data += "\n\n[注意: 数据内容过长已被截断，以上为部分数据内容]"
-        
+
         return truncated_data, True
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -89,7 +95,9 @@ class DataSummaryTool(Tool):
             query = tool_parameters.get("query", "")
             llm_model = tool_parameters.get("llm")
             custom_rules = tool_parameters.get("custom_rules", "")
-            user_prompt = tool_parameters.get("user_prompt", "")  # 新增：支持用户自定义prompt
+            user_prompt = tool_parameters.get(
+                "user_prompt", ""
+            )  # 新增：支持用户自定义prompt
             data_format = "auto"
 
             # 验证必要参数
@@ -97,7 +105,9 @@ class DataSummaryTool(Tool):
                 self.logger.error("错误: 缺少LLM模型配置")
                 raise ValueError("缺少LLM模型配置")
 
-            is_valid, error_message = self._validate_input_data(data_content, query, custom_rules)
+            is_valid, error_message = self._validate_input_data(
+                data_content, query, custom_rules
+            )
             if not is_valid:
                 self.logger.error(f"输入验证失败: {error_message}")
                 raise ValueError(error_message)
@@ -119,18 +129,24 @@ class DataSummaryTool(Tool):
             if user_prompt and user_prompt.strip():
                 # 用户自定义prompt优先
                 system_prompt_content = "你是一个专业的数据分析专家，请根据用户自定义的分析指令和数据进行分析。"
-                user_prompt_content = user_prompt.replace("{{data}}", final_data).replace("{{query}}", query)
+                user_prompt_content = user_prompt.replace(
+                    "{{data}}", final_data
+                ).replace("{{query}}", query)
                 self.logger.info("使用用户自定义prompt")
             elif custom_rules and custom_rules.strip():
                 # 有自定义规则
                 analysis_prompt = _data_summary_prompt(final_data, query, custom_rules)
-                system_prompt_content = "你是一个专业的数据分析专家，请根据提供的规则和数据进行深入分析。"
+                system_prompt_content = (
+                    "你是一个专业的数据分析专家，请根据提供的规则和数据进行深入分析。"
+                )
                 user_prompt_content = analysis_prompt
                 self.logger.info("使用自定义规则构建分析prompt")
             else:
                 # 默认prompt
                 analysis_prompt = _data_summary_prompt(final_data, query)
-                system_prompt_content = "你是一个专业的数据分析专家，请根据数据和问题进行分析。"
+                system_prompt_content = (
+                    "你是一个专业的数据分析专家，请根据数据和问题进行分析。"
+                )
                 user_prompt_content = analysis_prompt
                 self.logger.info("使用默认分析prompt")
 
@@ -141,7 +157,7 @@ class DataSummaryTool(Tool):
                     model_config=llm_model,
                     prompt_messages=[
                         SystemPromptMessage(content=system_prompt_content),
-                        UserPromptMessage(content=user_prompt_content)
+                        UserPromptMessage(content=user_prompt_content),
                     ],
                     stream=True,
                 )

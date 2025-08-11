@@ -1,4 +1,6 @@
-def _data_summary_prompt(data_content: str, query: str, custom_rules: str = None) -> str:
+def _data_summary_prompt(
+    data_content: str, query: str, custom_rules: str = None
+) -> str:
     """
     构建数据摘要prompt，传入数据内容，返回摘要信息
     """
@@ -28,4 +30,3 @@ def _data_summary_prompt(data_content: str, query: str, custom_rules: str = None
 Please provide a thorough yet concise analysis that addresses the user's specific query while offering valuable insights into the data."""
 
     return system_prompt
-

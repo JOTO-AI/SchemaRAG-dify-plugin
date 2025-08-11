@@ -18,7 +18,7 @@ SchemaRAG is a database schema RAG plugin designed specifically for the Dify pla
 
 ## ✨ Core Features
 
-- **Multi-Database Support**: MySQL & PostgreSQL, automatic syntax adaptation
+- **Multi-Database Support**: MySQL, PostgreSQL, MSSQL, Oracle, DM (达梦), automatic syntax adaptation
 - **Schema Auto-Analysis**: One-click data dictionary generation, structure visualization
 - **Knowledge Base Upload**: Automatic upload to Dify, supports incremental updates
 - **Natural Language to SQL**: Ready to use out of the box, supports complex queries
@@ -32,13 +32,23 @@ SchemaRAG is a database schema RAG plugin designed specifically for the Dify pla
 | Parameter Name    | Type   | Required | Description                    | Example                   |
 |------------------|--------|----------|--------------------------------|---------------------------|
 | Dataset API Key  | secret | Yes      | Dify knowledge base API key    | dataset-xxx               |
-| Database Type    | select | Yes      | Database type MySQL/PostgreSQL | MySQL                     |
+| Database Type    | select | Yes      | Database type MySQL/PostgreSQL/MSSQL/Oracle/DM | MySQL                     |
 | Database Host    | string | Yes      | Database host/IP               | 127.0.0.1                 |
 | Database Port    | number | Yes      | Database port                  | 3306/5432                 |
 | Database User    | string | Yes      | Database username              | root                      |
 | Database Password| secret | Yes      | Database password              | ******                    |
 | Database Name    | string | Yes      | Database name                  | mydb                      |
 | Dify Base URL    | string | No       | Dify API base URL              | `https://api.dify.ai/v1`  |
+
+## Supported Database Types
+
+| Database Type | Default Port | Driver | Connection String Format |
+|---------------|--------------|--------|--------------------------|
+| MySQL | 3306 | pymysql | `mysql+pymysql://user:password@host:port/database` |
+| PostgreSQL | 5432 | psycopg2-binary | `postgresql://user:password@host:port/database` |
+| Microsoft SQL Server | 1433 | pymssql | `mssql+pymssql://user:password@host:port/database` |
+| Oracle | 1521 | cx-Oracle | `oracle+cx_Oracle://user:password@host:port/database` |
+| DM Database (达梦) | 5236 | dm+pymysql | `dm+pymysql://user:password@host:port/database` |
 
 ---
 
@@ -92,7 +102,7 @@ print(result)
 #### Core Features
 
 - **Intelligent Query Conversion**: Automatically convert natural language questions to accurate SQL query statements
-- **Multi-Database Support**: Supports MySQL and PostgreSQL SQL dialects
+- **Multi-Database Support**: Supports MySQL, PostgreSQL, MSSQL, Oracle, and DM SQL dialects
 - **Knowledge Base Retrieval**: Intelligent retrieval and matching based on database schema knowledge base
 - **Ready to Use**: Can be used directly after configuring the knowledge base, no additional setup required
 
@@ -103,7 +113,7 @@ print(result)
 | dataset_id | string | Yes | Dify knowledge base ID containing database schema |
 | llm | model-selector | Yes | Large language model for SQL generation |
 | content | string | Yes | Natural language question to convert to SQL |
-| dialect | select | Yes | SQL dialect (MySQL/PostgreSQL) |
+| dialect | select | Yes | SQL dialect (MySQL/PostgreSQL/MSSQL/Oracle/DM) |
 | top_k | number | No | Number of results to retrieve from knowledge base (default 5) |
 
 ### 2. sql_executer Tool
@@ -113,6 +123,7 @@ print(result)
 #### Core Features
 
 - **Safe Execution**: Only supports SELECT queries to ensure data security
+- **Output Control**: Provides interface to control maximum query rows to prevent excessive data queries
 - **Multi-Format Output**: Supports JSON and Markdown output formats
 - **Direct Connection**: Direct database connection for query execution, real-time results
 - **Error Handling**: Comprehensive error handling mechanism with detailed error information
@@ -123,11 +134,12 @@ print(result)
 |-----------|------|----------|-------------|
 | sql | string | Yes | SQL query statement to execute |
 | output_format | select | Yes | Output format (JSON/Markdown) |
+| max_line | int | No | Maximum number of query rows (default 1000) |
 
-### 3. text2data Tool
+### 3. text2data Tool (Removed)
 
 **Notice:**
-This plugin was removed in v0.0.5 because using this plugin in ditify version 1.7.1 will cause the workflow front-end to crash. The subsequent ditify will fix [dify issue](https://github.com/langgenius/dify/issues/23154). Please be careful with this tool.
+This plugin was removed in v0.0.5 because using this plugin in Dify version 1.7.1 will cause the workflow front-end to crash. The subsequent Dify will fix [dify issue](https://github.com/langgenius/dify/issues/23154). Please be careful with this tool.
 
 Encapsulates the above two tools, ready to use out of the box, with added LLM summarization functionality to summarize query data into reports.
 
@@ -137,9 +149,7 @@ Encapsulates the above two tools, ready to use out of the box, with added LLM su
 
 #### Analysis Capabilities
 
-- **Multiple Analysis Types**: Supports summary, insights, trends, patterns, and comprehensive analysis
 - **Custom Rules**: Supports user-defined analysis rules and guidelines
-- **Flexible Output Formats**: Four output formats - structured, narrative, bullet points, and table
 - **Smart Data Format Recognition**: Automatically identifies JSON and other data formats for optimized processing
 - **Performance Optimized**: Cached common configurations to reduce response time
 
@@ -151,15 +161,14 @@ Encapsulates the above two tools, ready to use out of the box, with added LLM su
 | llm | model-selector | Yes | Large language model for analysis |
 | query | string | Yes | Analysis query or focus area |
 | custom_rules | string | No | Custom analysis rules |
-| analysis_type | select | No | Analysis type (summary/insights/trends/patterns/comprehensive) |
-| output_format | select | No | Output format (structured/narrative/bullet_points/table) |
+| user_prompt | string | No | Custom prompt |
 
 ---
 
 ## ❓ FAQ
 
 **Q: Which databases are supported?**  
-A: Currently supports MySQL and PostgreSQL.
+A: Currently supports MySQL, PostgreSQL, MSSQL, Oracle, and DM (达梦).
 
 **Q: Is the data secure?**  
 A: The plugin only reads database structure information to build Dify knowledge base. Sensitive information is not uploaded.
@@ -172,9 +181,6 @@ A: After configuring the database and generating the schema knowledge base, you 
 
 **Q: What data formats does the data_summary tool support?**  
 A: Supports multiple data formats including text and JSON. The tool automatically recognizes and optimizes processing. Supports data content up to 50,000 characters.
-
-**Q: How to choose the appropriate analysis type?**  
-A: Choose based on your needs: summary (concise overview), insights (deep discoveries), trends (change analysis), patterns (pattern recognition), comprehensive (complete analysis).
 
 **Q: How to use custom rules?**  
 A: You can specify specific analysis requirements, focus points, or constraints in the custom_rules parameter, supporting up to 2,000 characters.
