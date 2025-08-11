@@ -137,15 +137,15 @@ class SQLExecuterTool(Tool):
         # 验证参数
         sql_query, output_format, error_msg = self._validate_parameters(tool_parameters)
         if error_msg:
-            yield self.create_text_message(f"错误: {error_msg}")
-            return
+            self.logger.error(f"错误: {error_msg}")
+            raise ValueError(error_msg)
 
         try:
             # 执行查询前的安全检查
             cleaned_sql = self._clean_and_validate_sql(sql_query)
             if not cleaned_sql:
-                yield self.create_text_message("错误: 无效的SQL查询")
-                return
+                self.logger.error("错误: 无效的SQL查询")
+                raise ValueError("无效的SQL查询")
 
             # 记录查询开始时间
             import time

@@ -110,10 +110,10 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 os.makedirs(output_dir, exist_ok=True)
 
                 # 生成数据字典
-                schema_file_path = os.path.join(
-                    output_dir, f"{db_config.database}_schema.md"
-                )
-                schema_content = builder.generate_dictionary(schema_file_path)
+                # schema_file_path = os.path.join(
+                #     output_dir, f"{db_config.database}_schema.md"
+                # )
+                schema_content = builder.generate_dictionary()
 
                 # 记录成功信息
                 table_count = schema_content.count("#") if schema_content else 0

@@ -86,10 +86,9 @@ class SchemaRAGBuilder:
                 self.logger.error(f"Dify组件初始化失败: {e}")
                 self.uploader = None
 
-    def generate_dictionary(self, save_path: Optional[str] = None) -> Optional[str]:
+    def generate_dictionary(self) -> Optional[str]:
         """
         生成数据字典文件。
-        :param save_path: 可选，保存路径（支持.json/.txt/.md）
         :return: 数据字典字符串
         """
         if not self.schema_engine:
@@ -102,12 +101,12 @@ class SchemaRAGBuilder:
                 self.logger.error("未能获取到数据库schema信息")
                 raise RuntimeError("无法获取数据库schema信息，请检查数据库连接")
             mschema_str = mschema.to_mschema()
-            if save_path:
-                if save_path.endswith(".json"):
-                    mschema.save(save_path)
-                elif save_path.endswith(".txt") or save_path.endswith(".md"):
-                    save_raw_text(save_path, mschema_str)
-                logging.info(f"数据字典已保存到: {save_path}")
+            # if save_path:
+            #     if save_path.endswith(".json"):
+            #         mschema.save(save_path)
+            #     elif save_path.endswith(".txt") or save_path.endswith(".md"):
+            #         save_raw_text(save_path, mschema_str)
+            #     logging.info(f"数据字典已保存到: {save_path}")
             return mschema_str
         except Exception as e:
             self.logger.error(f"生成数据字典时发生错误: {e}")
