@@ -6,7 +6,7 @@
 **作者:** joto  
 **版本:** 0.0.6  
 **类型:** 工具
-**仓库:** https://github.com/JOTO-AI/SchemaRAG-dify-plugin
+**仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
 ---
 

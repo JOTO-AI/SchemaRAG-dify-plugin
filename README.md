@@ -6,8 +6,9 @@
 **Author:** joto  
 **Version:** 0.0.6  
 **Type:** tool  
-**Repository:** https://github.com/JOTO-AI/SchemaRAG-dify-plugin
+**Repository:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
+[中文文档](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/blob/main/README_CN.md)
 ---
 
 ## Overview
