@@ -95,12 +95,12 @@ class DataSummaryTool(Tool):
             # 验证必要参数
             if not llm_model:
                 self.logger.error("错误: 缺少LLM模型配置")
-                return
+                raise ValueError("缺少LLM模型配置")
 
             is_valid, error_message = self._validate_input_data(data_content, query, custom_rules)
             if not is_valid:
                 self.logger.error(f"输入验证失败: {error_message}")
-                return
+                raise ValueError(error_message)
 
             # 格式化数据内容
             try:

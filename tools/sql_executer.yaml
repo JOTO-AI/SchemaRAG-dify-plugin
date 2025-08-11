@@ -45,6 +45,17 @@ parameters:
           en_US: Markdown
           zh_Hans: Markdown
     default: json
+  - name: max_line
+    type: number
+    required: false
+    label:
+      en_US: Max Line
+      zh_Hans: 最大行数
+    human_description:
+      en_US: The maximum number of lines to return.
+      zh_Hans: 要返回的最大行数。防止查询数据过多导致内存问题。
+    llm_description: The maximum number of lines to include in the query results.
+    form: llm
 
 extra:
   python:

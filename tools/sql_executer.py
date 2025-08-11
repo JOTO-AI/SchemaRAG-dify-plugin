@@ -19,7 +19,6 @@ from service.database_service import DatabaseService
 class PerformanceConfig:
     """性能配置类，统一管理性能相关参数"""
 
-    MAX_RESULT_ROWS = 10000  # 最大结果行数
     QUERY_TIMEOUT = 30  # 查询超时时间（秒）
     DECIMAL_PLACES = 2  # 小数位数
     CACHE_MAX_SIZE = 5  # 数据库连接缓存大小
@@ -44,7 +43,6 @@ class SQLExecuterTool(Tool):
     _cache_max_size = PerformanceConfig.CACHE_MAX_SIZE
 
     # 性能和安全相关常量
-    MAX_RESULT_ROWS = PerformanceConfig.MAX_RESULT_ROWS  # 最大结果行数
     QUERY_TIMEOUT = PerformanceConfig.QUERY_TIMEOUT  # 查询超时时间（秒）
     DECIMAL_PLACES = PerformanceConfig.DECIMAL_PLACES  # 小数位数
 
@@ -70,7 +68,7 @@ class SQLExecuterTool(Tool):
                 "db_password": credentials.get("db_password"),
                 "db_name": credentials.get("db_name"),
             }
-
+            self.MAX_RESULT_ROWS=credentials.get("max_line", 500)
             # 验证配置完整性
             self._config_validated = all(
                 value is not None for value in self._db_config.values()
@@ -178,7 +176,7 @@ class SQLExecuterTool(Tool):
 
             # 检查结果大小，防止内存问题
             if result_count > self.MAX_RESULT_ROWS:
-                yield self.create_text_message(
+                self.logger.warning(
                     f"警告: 查询返回了 {result_count} 行数据，结果已截断到 {self.MAX_RESULT_ROWS} 行"
                 )
                 results = results[: self.MAX_RESULT_ROWS]
