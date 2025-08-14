@@ -1,0 +1,70 @@
+identity:
+  name: llm_plot
+  author: SchemaRAG Team
+  label:
+    en_US: LLM Smart Chart Generator
+    zh_Hans: LLM 智能图表生成器
+description:
+  human:
+    en_US: Generate charts intelligently based on user questions and data using LLM analysis. Supports bar charts, line charts, pie charts, scatter plots, and histograms.
+    zh_Hans: 基于用户问题和数据，通过 LLM 智能分析生成图表。支持柱状图、折线图、饼图、散点图和直方图。
+  llm: A powerful tool that analyzes user questions and data to automatically generate appropriate charts. It can understand natural language queries and select the best chart type to visualize the data.
+    
+parameters:
+  - name: user_question
+    type: string
+    required: true
+    label:
+      en_US: User Question
+      zh_Hans: 用户问题
+    human_description:
+      en_US: Describe what kind of chart you want to generate, e.g., "Show sales trends over time" or "Compare market share by company"
+      zh_Hans: 描述您想要生成什么样的图表，例如："显示销售趋势变化"或"比较各公司市场份额"
+    llm_description: Natural language description of the chart requirements from the user
+    form: llm
+
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: Data
+      zh_Hans: 数据
+    human_description:
+      en_US: The data to be visualized, can be JSON format, CSV text, or structured data
+      zh_Hans: 要可视化的数据，可以是 JSON 格式、CSV 文本或结构化数据
+    llm_description: Data to be visualized in JSON, CSV, or other structured format
+    form: llm
+
+
+  - name: llm
+    type: model-selector
+    scope: llm
+    required: true
+    label:
+      en_US: LLM Model
+      zh_Hans: 大语言模型
+      pt_BR: LLM Model
+    human_description:
+      en_US: The large language model  
+      zh_Hans: 大语言模型
+      pt_BR: The large language model 
+    llm_description: The LLM model 
+    form: form
+
+
+  - name: context
+    type: string
+    required: false
+    label:
+      en_US: Additional Context
+      zh_Hans: 额外上下文
+    human_description:
+      en_US: Additional context or requirements for chart generation (optional)
+      zh_Hans: 图表生成的额外上下文或要求（可选）
+    llm_description: Optional additional context to help with chart generation
+    form: llm
+
+
+extra:
+  python:
+    source: tools/llm_plot.py
