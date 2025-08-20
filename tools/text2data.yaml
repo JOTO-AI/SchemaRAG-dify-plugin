@@ -19,14 +19,14 @@ parameters:
     type: string
     required: true
     label:
-      en_US: Dataset ID
-      zh_Hans: 知识库ID
-      pt_BR: Dataset ID
+      en_US: Dataset ID(s)
+      zh_Hans: 知识库ID(s)
+      pt_BR: Dataset ID(s)
     human_description:
-      en_US: The ID of the Dify dataset containing the database schema
-      zh_Hans: 包含数据库架构的Dify知识库ID
-      pt_BR: The ID of the Dify dataset containing the database schema
-    llm_description: The dataset ID from Dify knowledge base containing database schema information
+      en_US: The ID(s) of the Dify dataset containing the database schema. For multiple datasets, use comma-separated IDs.
+      zh_Hans: 包含数据库架构的Dify知识库ID。多个知识库时，请使用逗号分隔的ID。
+      pt_BR: The ID(s) of the Dify dataset containing the database schema. For multiple datasets, use comma-separated IDs.
+    llm_description: The dataset ID(s) from Dify knowledge base containing database schema information. Use comma-separated IDs for multiple datasets.
     form: llm
 
   - name: llm
@@ -161,6 +161,135 @@ parameters:
           en_US: Summary
           zh_Hans: 摘要
     default: json
+
+  - name: custom_prompt
+    type: string
+    required: false
+    label:
+      en_US: Custom Prompt
+      zh_Hans: 自定义提示
+      pt_BR: Custom Prompt
+    human_description:
+      en_US: Custom instructions to enhance the system prompt for SQL generation
+      zh_Hans: 自定义指令以增强SQL生成的系统提示
+      pt_BR: Custom instructions to enhance the system prompt for SQL generation
+    llm_description: Additional custom instructions to enhance the SQL generation prompt
+    form: form
+
+  - name: db_type
+    type: select
+    required: false
+    label:
+      en_US: Database Type (Optional)
+      zh_Hans: 数据库类型（可选）
+      pt_BR: Database Type (Optional)
+    human_description:
+      en_US: Override database type for execution. If not provided, uses provider configuration.
+      zh_Hans: 覆盖执行时的数据库类型。如果未提供，则使用提供商配置。
+      pt_BR: Override database type for execution. If not provided, uses provider configuration.
+    llm_description: Database type to connect to for executing queries. Falls back to provider configuration if not specified.
+    form: form
+    options:
+      - value: mysql
+        label:
+          en_US: MySQL
+          zh_Hans: MySQL
+          pt_BR: MySQL
+      - value: postgresql
+        label:
+          en_US: PostgreSQL
+          zh_Hans: PostgreSQL
+          pt_BR: PostgreSQL
+      - value: mssql
+        label:
+          en_US: Microsoft SQL Server
+          zh_Hans: Microsoft SQL Server
+          pt_BR: Microsoft SQL Server
+      - value: oracle
+        label:
+          en_US: Oracle
+          zh_Hans: Oracle
+          pt_BR: Oracle
+      - value: dameng
+        label:
+          en_US: Dameng
+          zh_Hans: 达梦数据库
+          pt_BR: Dameng
+      - value: doris
+        label:
+          en_US: Apache Doris
+          zh_Hans: Apache Doris
+          pt_BR: Apache Doris
+
+  - name: db_host
+    type: string
+    required: false
+    label:
+      en_US: Database Host (Optional)
+      zh_Hans: 数据库主机（可选）
+      pt_BR: Database Host (Optional)
+    human_description:
+      en_US: Override database host for execution. If not provided, uses provider configuration.
+      zh_Hans: 覆盖执行时的数据库主机。如果未提供，则使用提供商配置。
+      pt_BR: Override database host for execution. If not provided, uses provider configuration.
+    llm_description: Database host address for execution. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_port
+    type: string
+    required: false
+    label:
+      en_US: Database Port (Optional)
+      zh_Hans: 数据库端口（可选）
+      pt_BR: Database Port (Optional)
+    human_description:
+      en_US: Override database port for execution. If not provided, uses provider configuration.
+      zh_Hans: 覆盖执行时的数据库端口。如果未提供，则使用提供商配置。
+      pt_BR: Override database port for execution. If not provided, uses provider configuration.
+    llm_description: Database port number for execution. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_user
+    type: string
+    required: false
+    label:
+      en_US: Database User (Optional)
+      zh_Hans: 数据库用户名（可选）
+      pt_BR: Database User (Optional)
+    human_description:
+      en_US: Override database username for execution. If not provided, uses provider configuration.
+      zh_Hans: 覆盖执行时的数据库用户名。如果未提供，则使用提供商配置。
+      pt_BR: Override database username for execution. If not provided, uses provider configuration.
+    llm_description: Database username for execution. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_password
+    type: string
+    required: false
+    label:
+      en_US: Database Password (Optional)
+      zh_Hans: 数据库密码（可选）
+      pt_BR: Database Password (Optional)
+    human_description:
+      en_US: Override database password for execution. If not provided, uses provider configuration.
+      zh_Hans: 覆盖执行时的数据库密码。如果未提供，则使用提供商配置。
+      pt_BR: Override database password for execution. If not provided, uses provider configuration.
+    llm_description: Database password for execution. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_name
+    type: string
+    required: false
+    label:
+      en_US: Database Name (Optional)
+      zh_Hans: 数据库名称（可选）
+      pt_BR: Database Name (Optional)
+    human_description:
+      en_US: Override database name for execution. If not provided, uses provider configuration.
+      zh_Hans: 覆盖执行时的数据库名称。如果未提供，则使用提供商配置。
+      pt_BR: Override database name for execution. If not provided, uses provider configuration.
+    llm_description: Database name for execution. Falls back to provider configuration if not specified.
+    form: form
 
 extra:
   python:

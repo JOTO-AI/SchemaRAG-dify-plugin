@@ -118,6 +118,36 @@ class SQLExecuterTool(Tool):
         """清理服务缓存，释放资源"""
         cls._db_service_cache.clear()
 
+    def _get_effective_db_config(self, tool_parameters: dict[str, Any]) -> dict:
+        """
+        获取有效的数据库配置，工具参数优先于提供商配置
+        
+        Args:
+            tool_parameters: 工具参数
+            
+        Returns:
+            有效的数据库配置字典
+        """
+        # 从工具参数获取数据库配置，如果未提供则使用provider配置作为默认值
+        db_config = {
+            "db_type": tool_parameters.get("db_type") or self._db_config["db_type"],
+            "db_host": tool_parameters.get("db_host") or self._db_config["db_host"],
+            "db_port": (
+                self._safe_port_conversion(tool_parameters.get("db_port"))
+                if tool_parameters.get("db_port")
+                else self._db_config["db_port"]
+            ),
+            "db_user": tool_parameters.get("db_user") or self._db_config["db_user"],
+            "db_password": tool_parameters.get("db_password") or self._db_config["db_password"],
+            "db_name": tool_parameters.get("db_name") or self._db_config["db_name"],
+        }
+        
+        # 验证配置完整性
+        if not all(value is not None for value in db_config.values()):
+            self.logger.warning("数据库配置不完整")
+            
+        return db_config
+
     @classmethod
     def get_cache_size(cls) -> int:
         """获取当前缓存大小"""
@@ -127,10 +157,13 @@ class SQLExecuterTool(Tool):
         """
         Execute SQL queries and return results in specified format.
         """
-        # 早期验证配置
-        if not self._config_validated:
+        # 获取有效的数据库配置（工具参数优先）
+        effective_db_config = self._get_effective_db_config(tool_parameters)
+        
+        # 验证有效配置
+        if not all(value is not None for value in effective_db_config.values()):
             yield self.create_text_message(
-                "错误: 数据库配置不完整或无效，请检查provider配置"
+                "错误: 数据库配置不完整，请提供完整的数据库连接参数或确保provider配置正确"
             )
             return
 
@@ -155,12 +188,12 @@ class SQLExecuterTool(Tool):
             # 执行查询
             self.logger.info(f"执行SQL查询: {cleaned_sql[:100]}...")
             results, columns = self.db_service.execute_query(
-                self._db_config["db_type"],
-                self._db_config["db_host"],
-                self._db_config["db_port"],
-                self._db_config["db_user"],
-                self._db_config["db_password"],
-                self._db_config["db_name"],
+                effective_db_config["db_type"],
+                effective_db_config["db_host"],
+                effective_db_config["db_port"],
+                effective_db_config["db_user"],
+                effective_db_config["db_password"],
+                effective_db_config["db_name"],
                 cleaned_sql,
             )
 

@@ -56,6 +56,15 @@ class Text2DataTool(Tool):
             top_k = tool_parameters.get("top_k", 5)
             retrieval_model = tool_parameters.get("retrieval_model", "semantic_search")
             output_format = tool_parameters.get("output_format", "json")
+            custom_prompt = tool_parameters.get("custom_prompt", "")
+            
+            # 获取动态数据库配置参数（可选）
+            dynamic_db_type = tool_parameters.get("db_type")
+            dynamic_db_host = tool_parameters.get("db_host")
+            dynamic_db_port = tool_parameters.get("db_port")
+            dynamic_db_user = tool_parameters.get("db_user")
+            dynamic_db_password = tool_parameters.get("db_password")
+            dynamic_db_name = tool_parameters.get("db_name")
 
             # 验证必要参数
             if not dataset_id:
@@ -74,25 +83,34 @@ class Text2DataTool(Tool):
                 yield self.create_text_message("错误: 缺少API配置信息")
                 return
 
-            # 验证数据库配置
-            if not all(
-                [
-                    self.db_type,
-                    self.db_host,
-                    self.db_port,
-                    self.db_user,
-                    self.db_password,
-                    self.db_name,
-                ]
-            ):
-                yield self.create_text_message("错误: 数据库配置不完整")
+            # 确定有效的数据库配置（工具参数优先）
+            effective_db_type = dynamic_db_type or self.db_type
+            effective_db_host = dynamic_db_host or self.db_host
+            effective_db_port = (
+                int(dynamic_db_port) if dynamic_db_port else self.db_port
+            )
+            effective_db_user = dynamic_db_user or self.db_user
+            effective_db_password = dynamic_db_password or self.db_password
+            effective_db_name = dynamic_db_name or self.db_name
+
+            # 验证有效数据库配置
+            if not all([
+                effective_db_type,
+                effective_db_host,
+                effective_db_port,
+                effective_db_user,
+                effective_db_password,
+                effective_db_name,
+            ]):
+                yield self.create_text_message("错误: 数据库配置不完整，请提供完整的数据库连接参数或确保provider配置正确")
                 return
 
             # 步骤1: 从知识库检索相关的schema信息
             yield self.create_text_message("正在从知识库检索相关的数据库架构信息...")
 
             try:
-                schema_info = self.knowledge_service.retrieve_schema_from_dataset(
+                # 使用多数据集检索功能，向前兼容单个数据集
+                schema_info = self.knowledge_service.retrieve_schema_from_multiple_datasets(
                     dataset_id, content, top_k, retrieval_model
                 )
             except Exception as e:
@@ -108,7 +126,7 @@ class Text2DataTool(Tool):
 
             try:
                 system_prompt = text2sql_prompt._build_system_prompt(
-                    dialect, schema_info, content
+                    dialect, schema_info, content, custom_prompt
                 )
 
                 response = self.session.model.llm.invoke(
@@ -155,12 +173,12 @@ class Text2DataTool(Tool):
 
             try:
                 results, columns = self.db_service.execute_query(
-                    self.db_type,
-                    self.db_host,
-                    self.db_port,
-                    self.db_user,
-                    self.db_password,
-                    self.db_name,
+                    effective_db_type,
+                    effective_db_host,
+                    effective_db_port,
+                    effective_db_user,
+                    effective_db_password,
+                    effective_db_name,
                     sql_query,
                 )
             except Exception as e:

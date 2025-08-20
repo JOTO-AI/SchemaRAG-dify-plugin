@@ -92,7 +92,7 @@ class Text2SQLTool(Tool):
                 yield self.create_text_message(f"错误: {params_result}")
                 return
 
-            dataset_id, llm_model, content, dialect, top_k, retrieval_model = (
+            dataset_id, llm_model, content, dialect, top_k, retrieval_model, custom_prompt = (
                 params_result
             )
 
@@ -101,7 +101,8 @@ class Text2SQLTool(Tool):
                 f"从知识库 {dataset_id} 检索架构信息，查询长度: {len(content)}"
             )
 
-            schema_info = self.knowledge_service.retrieve_schema_from_dataset(
+            # 使用多数据集检索功能，向前兼容单个数据集
+            schema_info = self.knowledge_service.retrieve_schema_from_multiple_datasets(
                 dataset_id, content, top_k, retrieval_model
             )
 
@@ -111,7 +112,7 @@ class Text2SQLTool(Tool):
 
             # 步骤2: 构建预定义的prompt
             system_prompt = text2sql_prompt._build_system_prompt(
-                dialect, schema_info, content
+                dialect, schema_info, content, custom_prompt
             )
 
             # 步骤3: 调用LLM生成SQL
@@ -167,7 +168,7 @@ class Text2SQLTool(Tool):
 
     def _validate_and_extract_parameters(
         self, tool_parameters: dict[str, Any]
-    ) -> Union[Tuple[str, Any, str, str, int, str], str]:
+    ) -> Union[Tuple[str, Any, str, str, int, str, str], str]:
         """验证并提取工具参数，返回参数元组或错误消息"""
         # 验证必要参数
         dataset_id = tool_parameters.get("dataset_id")
@@ -209,6 +210,9 @@ class Text2SQLTool(Tool):
         ]:
             return f"不支持的检索模型: {retrieval_model}"
 
+        # 获取自定义提示（可选）
+        custom_prompt = tool_parameters.get("custom_prompt", "")
+
         return (
             dataset_id.strip(),
             llm_model,
@@ -216,4 +220,5 @@ class Text2SQLTool(Tool):
             dialect,
             top_k,
             retrieval_model,
+            custom_prompt,
         )

@@ -57,6 +57,121 @@ parameters:
     llm_description: The maximum number of lines to include in the query results.
     form: llm
 
+  - name: db_type
+    type: select
+    required: false
+    label:
+      en_US: Database Type (Optional)
+      zh_Hans: 数据库类型（可选）
+      pt_BR: Database Type (Optional)
+    human_description:
+      en_US: Override database type. If not provided, uses provider configuration.
+      zh_Hans: 覆盖数据库类型。如果未提供，则使用提供商配置。
+      pt_BR: Override database type. If not provided, uses provider configuration.
+    llm_description: Database type to connect to. Falls back to provider configuration if not specified.
+    form: form
+    options:
+      - value: mysql
+        label:
+          en_US: MySQL
+          zh_Hans: MySQL
+          pt_BR: MySQL
+      - value: postgresql
+        label:
+          en_US: PostgreSQL
+          zh_Hans: PostgreSQL
+          pt_BR: PostgreSQL
+      - value: mssql
+        label:
+          en_US: Microsoft SQL Server
+          zh_Hans: Microsoft SQL Server
+          pt_BR: Microsoft SQL Server
+      - value: oracle
+        label:
+          en_US: Oracle
+          zh_Hans: Oracle
+          pt_BR: Oracle
+      - value: dameng
+        label:
+          en_US: Dameng
+          zh_Hans: 达梦数据库
+          pt_BR: Dameng
+      - value: doris
+        label:
+          en_US: Apache Doris
+          zh_Hans: Apache Doris
+          pt_BR: Apache Doris
+
+  - name: db_host
+    type: string
+    required: false
+    label:
+      en_US: Database Host (Optional)
+      zh_Hans: 数据库主机（可选）
+      pt_BR: Database Host (Optional)
+    human_description:
+      en_US: Override database host. If not provided, uses provider configuration.
+      zh_Hans: 覆盖数据库主机。如果未提供，则使用提供商配置。
+      pt_BR: Override database host. If not provided, uses provider configuration.
+    llm_description: Database host address. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_port
+    type: string
+    required: false
+    label:
+      en_US: Database Port (Optional)
+      zh_Hans: 数据库端口（可选）
+      pt_BR: Database Port (Optional)
+    human_description:
+      en_US: Override database port. If not provided, uses provider configuration.
+      zh_Hans: 覆盖数据库端口。如果未提供，则使用提供商配置。
+      pt_BR: Override database port. If not provided, uses provider configuration.
+    llm_description: Database port number. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_user
+    type: string
+    required: false
+    label:
+      en_US: Database User (Optional)
+      zh_Hans: 数据库用户名（可选）
+      pt_BR: Database User (Optional)
+    human_description:
+      en_US: Override database username. If not provided, uses provider configuration.
+      zh_Hans: 覆盖数据库用户名。如果未提供，则使用提供商配置。
+      pt_BR: Override database username. If not provided, uses provider configuration.
+    llm_description: Database username. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_password
+    type: string
+    required: false
+    label:
+      en_US: Database Password (Optional)
+      zh_Hans: 数据库密码（可选）
+      pt_BR: Database Password (Optional)
+    human_description:
+      en_US: Override database password. If not provided, uses provider configuration.
+      zh_Hans: 覆盖数据库密码。如果未提供，则使用提供商配置。
+      pt_BR: Override database password. If not provided, uses provider configuration.
+    llm_description: Database password. Falls back to provider configuration if not specified.
+    form: form
+
+  - name: db_name
+    type: string
+    required: false
+    label:
+      en_US: Database Name (Optional)
+      zh_Hans: 数据库名称（可选）
+      pt_BR: Database Name (Optional)
+    human_description:
+      en_US: Override database name. If not provided, uses provider configuration.
+      zh_Hans: 覆盖数据库名称。如果未提供，则使用提供商配置。
+      pt_BR: Override database name. If not provided, uses provider configuration.
+    llm_description: Database name to connect to. Falls back to provider configuration if not specified.
+    form: form
+
 extra:
   python:
     source: tools/sql_executer.py
