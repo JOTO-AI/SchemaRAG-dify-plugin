@@ -1,6 +1,6 @@
 import requests
 import logging
-from typing import Optional, List
+from typing import Optional, List, Union
 
 
 class KnowledgeService:
@@ -236,3 +236,66 @@ class KnowledgeService:
         except Exception as e:
             self.logger.error(f"获取数据集列表时发生错误: {str(e)}")
             return []
+
+    def retrieve_schema_from_multiple_datasets(
+        self,
+        dataset_ids: Union[List[str], str],
+        query: str,
+        top_k: int = 5,
+        retrieval_model: str = "semantic_search",
+    ) -> str:
+        """
+        从多个Dify知识库检索相关的schema信息并合并结果
+
+        Args:
+            dataset_ids: 数据集ID列表或逗号分隔的字符串
+            query: 查询内容
+            top_k: 每个数据集返回结果数量
+            retrieval_model: 检索模型类型
+
+        Returns:
+            检索到的schema内容，多个内容之间用\\n\\n分隔
+        """
+        # 处理输入参数，支持字符串和列表
+        if isinstance(dataset_ids, str):
+            # 如果是字符串，按逗号分隔并去除空白字符
+            dataset_ids = [id.strip() for id in dataset_ids.split(",") if id.strip()]
+        
+        if not dataset_ids:
+            self.logger.warning("没有提供有效的数据集ID")
+            return ""
+
+        all_schema_contents = []
+        successful_retrievals = 0
+
+        for dataset_id in dataset_ids:
+            try:
+                self.logger.info(f"正在从数据集 {dataset_id} 检索内容...")
+                schema_content = self.retrieve_schema_from_dataset(
+                    dataset_id, query, top_k, retrieval_model
+                )
+                
+                if schema_content and schema_content.strip():
+                    # 添加数据集标识符
+                    labeled_content = f"=== 来自数据集 {dataset_id} 的架构信息 ===\\n{schema_content}"
+                    all_schema_contents.append(labeled_content)
+                    successful_retrievals += 1
+                    self.logger.info(f"成功从数据集 {dataset_id} 检索到内容")
+                else:
+                    self.logger.warning(f"从数据集 {dataset_id} 未检索到有效内容")
+                    
+            except Exception as e:
+                self.logger.error(f"从数据集 {dataset_id} 检索失败: {str(e)}")
+                continue
+
+        if successful_retrievals == 0:
+            self.logger.warning("所有数据集检索均失败")
+            return ""
+
+        # 合并所有检索到的内容
+        merged_content = "\\n\\n".join(all_schema_contents)
+        self.logger.info(
+            f"成功从 {successful_retrievals}/{len(dataset_ids)} 个数据集检索并合并内容"
+        )
+        
+        return merged_content

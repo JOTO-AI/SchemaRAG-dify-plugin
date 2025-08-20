@@ -1,8 +1,14 @@
-def _build_system_prompt(dialect: str, db_schema: str, question: str) -> str:
+def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_prompt: str = None) -> str:
     """
     构建预定义的system prompt
+    
+    Args:
+        dialect: SQL方言
+        db_schema: 数据库模式
+        question: 用户问题
+        custom_prompt: 自定义提示（可选）
     """
-    system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
+    base_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
 
 【Database Schema】
 {db_schema}
@@ -33,7 +39,16 @@ Analyze the user's question carefully and generate a precise SQL query that answ
 - Double-check table and column names against the schema
 - Ensure all referenced tables are properly joined
 - Verify that aggregation functions are used correctly
-- Confirm that data types in WHERE conditions are compatible
+- Confirm that data types in WHERE conditions are compatible"""
+
+    # Add custom prompt if provided
+    if custom_prompt and custom_prompt.strip():
+        base_prompt += f"""
+
+【Custom Instructions】
+{custom_prompt.strip()}"""
+
+    base_prompt += """
 
 【Example Response Format】
 ```sql
@@ -46,4 +61,4 @@ ORDER BY t1.created_date DESC;
 
 Remember: Generate clean, executable SQL that directly answers the user's question using the exact schema provided."""
 
-    return system_prompt
+    return base_prompt

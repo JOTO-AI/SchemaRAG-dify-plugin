@@ -19,14 +19,14 @@ parameters:
     type: string
     required: true
     label:
-      en_US: Dataset ID
-      zh_Hans: 知识库ID
-      pt_BR: Dataset ID
+      en_US: Dataset ID(s)
+      zh_Hans: 知识库ID(s)
+      pt_BR: Dataset ID(s)
     human_description:
-      en_US: The ID of the Dify dataset containing the database schema
-      zh_Hans: 包含数据库架构的Dify知识库ID
-      pt_BR: The ID of the Dify dataset containing the database schema
-    llm_description: The dataset ID from Dify knowledge base containing database schema information
+      en_US: The ID(s) of the Dify dataset containing the database schema. For multiple datasets, use comma-separated IDs.
+      zh_Hans: 包含数据库架构的Dify知识库ID。多个知识库时，请使用逗号分隔的ID。
+      pt_BR: The ID(s) of the Dify dataset containing the database schema. For multiple datasets, use comma-separated IDs.
+    llm_description: The dataset ID(s) from Dify knowledge base containing database schema information. Use comma-separated IDs for multiple datasets.
     form: llm
 
   - name: llm
@@ -136,6 +136,20 @@ parameters:
           zh_Hans: 混合检索
           pt_BR: Hybrid Search
     default: semantic_search
+
+  - name: custom_prompt
+    type: string
+    required: false
+    label:
+      en_US: Custom Prompt
+      zh_Hans: 自定义提示
+      pt_BR: Custom Prompt
+    human_description:
+      en_US: Custom instructions to enhance the system prompt for SQL generation
+      zh_Hans: 自定义指令以增强SQL生成的系统提示
+      pt_BR: Custom instructions to enhance the system prompt for SQL generation
+    llm_description: Additional custom instructions to enhance the SQL generation prompt
+    form: form
 
 extra:
   python:
