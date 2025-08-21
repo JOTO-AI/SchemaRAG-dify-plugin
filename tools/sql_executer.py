@@ -68,7 +68,7 @@ class SQLExecuterTool(Tool):
                 "db_password": credentials.get("db_password"),
                 "db_name": credentials.get("db_name"),
             }
-            self.MAX_RESULT_ROWS = credentials.get("max_line", 500)
+            
             # 验证配置完整性
             self._config_validated = all(
                 value is not None for value in self._db_config.values()
@@ -135,7 +135,7 @@ class SQLExecuterTool(Tool):
             return
 
         # 验证参数
-        sql_query, output_format, error_msg = self._validate_parameters(tool_parameters)
+        sql_query, output_format, max_rows, error_msg = self._validate_parameters(tool_parameters)
         if error_msg:
             self.logger.error(f"错误: {error_msg}")
             raise ValueError(error_msg)
@@ -175,11 +175,11 @@ class SQLExecuterTool(Tool):
                 return
 
             # 检查结果大小，防止内存问题
-            if result_count > self.MAX_RESULT_ROWS:
+            if result_count > max_rows:
                 self.logger.warning(
-                    f"警告: 查询返回了 {result_count} 行数据，结果已截断到 {self.MAX_RESULT_ROWS} 行"
+                    f"警告: 查询返回了 {result_count} 行数据，结果已截断到 {max_rows} 行"
                 )
-                results = results[: self.MAX_RESULT_ROWS]
+                results = results[:max_rows]
 
             # 只有在有数据时才进行格式化
             if results:
@@ -196,79 +196,81 @@ class SQLExecuterTool(Tool):
 
         except ValueError as e:
             # 输入验证错误
-            yield self.create_text_message(f"输入错误: {str(e)}")
+            self.logger.error(f"输入错误: {str(e)}")
+            raise ValueError(f"输入错误: {str(e)}")
+
         except ConnectionError as e:
             # 数据库连接错误
-            yield self.create_text_message(f"数据库连接错误: {str(e)}")
+            self.logger.error(f"数据库连接错误: {str(e)}")
+            raise ConnectionError(f"数据库连接错误: {str(e)}")
         except Exception as e:
             # 其他未预期的错误
             self.logger.error(f"SQL执行异常: {str(e)}")
-            yield self.create_text_message(f"SQL执行时发生错误: {str(e)}")
+            raise ValueError(f"SQL执行异常: {str(e)}")
 
     def _validate_parameters(
         self, tool_parameters: dict[str, Any]
-    ) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[Optional[str], Optional[str], Optional[int], Optional[str]]:
         """验证工具参数并返回处理后的值"""
         # 验证SQL查询
         sql_query = tool_parameters.get("sql")
         if not sql_query or not sql_query.strip():
-            return None, None, "SQL查询不能为空"
+            return None, None, None, "SQL查询不能为空"
 
         # 验证输出格式
         output_format = tool_parameters.get("output_format", "json")
         if output_format not in ["json", "md"]:
-            return None, None, "输出格式只支持 'json' 或 'md'"
+            return None, None, None, "输出格式只支持 'json' 或 'md'"
 
-        return sql_query.strip(), output_format, None
+        # 验证max_line参数
+        max_line = tool_parameters.get("max_line", 500)  # 默认500行
+        try:
+            max_rows = int(max_line)
+            if max_rows <= 0:
+                max_rows = 500
+                self.logger.warning(f"max_line参数必须大于0，已使用默认值500: {max_line}")
+        except (ValueError, TypeError):
+            max_rows = 500
+            self.logger.warning(f"max_line参数无效，已使用默认值500: {max_line}")
+
+        return sql_query.strip(), output_format, max_rows, None
 
     def _clean_and_validate_sql(self, sql_query: str) -> Optional[str]:
-        """清理和验证SQL查询，提高安全性和性能"""
+        """清理和验证SQL查询，使用正则黑名单模式，禁止危险操作"""
         if not sql_query:
             return None
 
         try:
-            # 使用正则表达式清理markdown格式（优化版本）
+            # 清理 markdown 格式
             markdown_pattern = re.compile(
                 r"```(?:sql)?\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE
             )
             match = markdown_pattern.search(sql_query)
-
-            if match:
-                cleaned_sql = match.group(1).strip()
-            else:
-                cleaned_sql = sql_query.strip()
-
+            cleaned_sql = match.group(1).strip() if match else sql_query.strip()
             if not cleaned_sql:
                 return None
 
-            # 移除多余的空白字符和换行符
+            # 移除多余空白
             cleaned_sql = re.sub(r"\s+", " ", cleaned_sql).strip()
-
-            # 安全检查：只允许SELECT语句（大小写不敏感）
             sql_lower = cleaned_sql.lower()
-            if not sql_lower.startswith("select"):
-                raise ValueError("出于安全考虑，只允许执行SELECT查询")
 
-            # 额外安全检查：禁止危险关键字
-            dangerous_keywords = [
-                "drop",
-                "delete",
-                "update",
-                "insert",
-                "create",
-                "alter",
-                "truncate",
-                "exec",
-                "execute",
-                "sp_",
-                "xp_",
-                "--",
-                "/*",
+            # 黑名单模式：禁止危险的SQL操作
+            dangerous_patterns = [
+                r'^\s*(drop|delete|truncate|update|insert|create|alter|grant|revoke)\s+',  # 危险的DDL/DML操作
+                r'\b(exec|execute|sp_|xp_)\b',  # 存储过程执行
+                r'\b(into\s+outfile|load_file|load\s+data)\b',  # 文件操作
+                r'\b(union\s+all\s+select.*into|select.*into)\b',  # SELECT INTO操作
+                r';\s*(drop|delete|truncate|update|insert|create|alter)',  # 分号后的危险操作
+                r'\b(benchmark|sleep|waitfor|delay)\b',  # 时间延迟函数
+                r'@@|information_schema\.(?!columns|tables|schemata)',  # 系统变量和敏感信息模式表
             ]
 
-            for keyword in dangerous_keywords:
-                if keyword in sql_lower:
-                    raise ValueError(f"SQL查询包含被禁止的关键字: {keyword}")
+            # 检查是否包含危险模式
+            for pattern in dangerous_patterns:
+                if re.search(pattern, sql_lower, re.IGNORECASE):
+                    raise ValueError(f"检测到危险的SQL操作，查询被拒绝")
+
+
 
             return cleaned_sql
 

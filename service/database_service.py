@@ -42,10 +42,10 @@ class DatabaseService:
                 raise ValueError("SQL query cannot be empty.")
 
             # Security check: only allow SELECT statements
-            if not query.lower().strip().startswith("select"):
-                raise ValueError(
-                    "Only SELECT queries are allowed for security reasons."
-                )
+            # if not query.lower().strip().startswith("select"):
+            #     raise ValueError(
+            #         "Only SELECT queries are allowed for security reasons."
+            #     )
 
             with conn.cursor() as cursor:
                 cursor.execute(query)

@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.0.6-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.0.7-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.0.6  
+**版本:** 0.0.7  
 **类型:** 工具
 **仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -139,7 +139,7 @@ print(result)
 ### 3. text2data 工具（删除）
 
 **注意：**
-此插件在v0.0.6移除，原因是在dify版本1.7.1使用此插件会导致工作流前端崩溃，后续dify会修复[dify issue](https://github.com/langgenius/dify/issues/23154)。请注意版本慎用此工具。
+此插件在v0.0.7移除，原因是在dify版本1.7.1使用此插件会导致工作流前端崩溃，后续dify会修复[dify issue](https://github.com/langgenius/dify/issues/23154)。请注意版本慎用此工具。
 
 封装上述两种工具，开箱即用，增加 LLM 总结功能，将查询的数据总结成报告输出。
 

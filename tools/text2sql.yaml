@@ -82,6 +82,22 @@ parameters:
           en_US: PostgreSQL
           zh_Hans: PostgreSQL
           pt_BR: PostgreSQL
+      - value: mssql
+        label:
+          en_US: Microsoft SQL Server
+          zh_Hans: Microsoft SQL Server
+          pt_BR: Microsoft SQL Server
+      - value: oracle
+        label:
+          en_US: Oracle
+          zh_Hans: Oracle
+          pt_BR: Oracle
+      - value: dameng
+        label:
+          en_US: Dameng
+          zh_Hans: 达梦数据库
+          pt_BR: Dameng
+
     default: mysql
 
   - name: top_k

@@ -82,15 +82,15 @@ class Text2SQLTool(Tool):
         """
         # 早期配置验证
         if not self._config_validated:
-            yield self.create_text_message("错误: 缺少API配置信息")
-            return
+            logging.error("错误: 缺少API配置信息")
+            raise ValueError("API配置无效")
 
         try:
             # 验证和获取参数
             params_result = self._validate_and_extract_parameters(tool_parameters)
             if isinstance(params_result, str):  # 错误消息
-                yield self.create_text_message(f"错误: {params_result}")
-                return
+                logging.error(f"错误: {params_result}")
+                raise ValueError(params_result)
 
             dataset_id, llm_model, content, dialect, top_k, retrieval_model = (
                 params_result
@@ -140,7 +140,7 @@ class Text2SQLTool(Tool):
 
                     # 防止过长的响应
                     if total_content_length > 50000:  # 50KB限制
-                        yield self.create_text_message("警告: 响应内容过长，已截断")
+                        logging.warning("警告: 响应内容过长，已截断")
                         break
 
                     yield self.create_text_message(text=sql_content)
@@ -157,13 +157,13 @@ class Text2SQLTool(Tool):
 
         except ValueError as e:
             self.logger.error(f"参数验证错误: {str(e)}")
-            yield self.create_text_message(f"参数错误: {str(e)}")
+            raise ValueError(f"参数错误: {str(e)}")
         except ConnectionError as e:
             self.logger.error(f"网络连接错误: {str(e)}")
-            yield self.create_text_message(f"网络连接错误: {str(e)}")
+            raise ValueError(f"网络连接错误: {str(e)}")
         except Exception as e:
             self.logger.error(f"SQL生成异常: {str(e)}")
-            yield self.create_text_message(f"生成SQL时发生错误: {str(e)}")
+            raise ValueError(f"SQL生成异常: {str(e)}")
 
     def _validate_and_extract_parameters(
         self, tool_parameters: dict[str, Any]

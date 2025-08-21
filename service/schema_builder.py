@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, List
 import sys
 
 sys.path.append(
@@ -26,6 +26,7 @@ class SchemaRAGBuilder:
         db_config: DatabaseConfig,
         logger_config: LoggerConfig,
         dify_config: Optional[DifyUploadConfig] = None,
+        include_tables: Optional[List[str]] = None,
     ):
         if not isinstance(db_config, DatabaseConfig):
             raise TypeError("db_config必须为DatabaseConfig类型")
@@ -36,6 +37,7 @@ class SchemaRAGBuilder:
         self.db_config = db_config
         self.logger_config = logger_config
         self.dify_config = dify_config
+        self.include_tables = include_tables
         self.logger_manager = Logger(self.logger_config)
         self.logger = self.logger_manager.get_logger()
         self.engine: Optional[Engine] = create_engine(
@@ -72,6 +74,7 @@ class SchemaRAGBuilder:
             self.schema_engine = SchemaEngine(
                 engine=self.engine,
                 db_name=self.db_config.database,
+                include_tables=self.include_tables,
             )
             self.logger.info("Schema引擎初始化成功")
         except Exception as e:
