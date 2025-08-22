@@ -153,6 +153,24 @@ parameters:
           pt_BR: Hybrid Search
     default: semantic_search
 
+  - name: custom_prompt
+    type: string
+    required: false
+    label:
+      en_US: Custom Instructions
+      zh_Hans: 自定义指令
+      pt_BR: Custom Instructions
+    human_description:
+      en_US: Custom instructions to enhance SQL generation quality and targeting
+      zh_Hans: 自定义指令以增强SQL生成质量和针对性
+      pt_BR: Custom instructions to enhance SQL generation quality and targeting
+    llm_description: Custom instructions that will be added to the system prompt to improve SQL generation results
+    form: llm
+    placeholder:
+      en_US: "e.g., Always use explicit column names, avoid SELECT *, and prefer JOIN over subqueries for better performance."
+      zh_Hans: "例如：始终使用明确的列名，避免 SELECT *，优先使用 JOIN 而不是子查询以获得更好的性能。"
+      pt_BR: "e.g., Always use explicit column names, avoid SELECT *, and prefer JOIN over subqueries for better performance."
+
 extra:
   python:
     source: tools/text2sql.py

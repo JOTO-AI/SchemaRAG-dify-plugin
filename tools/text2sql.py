@@ -92,7 +92,7 @@ class Text2SQLTool(Tool):
                 logging.error(f"错误: {params_result}")
                 raise ValueError(params_result)
 
-            dataset_id, llm_model, content, dialect, top_k, retrieval_model = (
+            dataset_id, llm_model, content, dialect, top_k, retrieval_model, custom_prompt = (
                 params_result
             )
 
@@ -109,11 +109,11 @@ class Text2SQLTool(Tool):
                 self.logger.warning("未检索到相关的架构信息")
                 schema_info = "未找到相关的数据库架构信息"
 
-            # 步骤2: 构建预定义的prompt
+            # 步骤2: 构建预定义的prompt（包含自定义提示）
             system_prompt = text2sql_prompt._build_system_prompt(
-                dialect, schema_info, content
+                dialect, schema_info, content, custom_prompt
             )
-
+            
             # 步骤3: 调用LLM生成SQL
             self.logger.info("开始调用LLM生成SQL查询")
 
@@ -167,7 +167,7 @@ class Text2SQLTool(Tool):
 
     def _validate_and_extract_parameters(
         self, tool_parameters: dict[str, Any]
-    ) -> Union[Tuple[str, Any, str, str, int, str], str]:
+    ) -> Union[Tuple[str, Any, str, str, int, str, str], str]:
         """验证并提取工具参数，返回参数元组或错误消息"""
         # 验证必要参数
         dataset_id = tool_parameters.get("dataset_id")
@@ -209,6 +209,15 @@ class Text2SQLTool(Tool):
         ]:
             return f"不支持的检索模型: {retrieval_model}"
 
+        # 获取自定义提示词（可选参数）
+        custom_prompt = tool_parameters.get("custom_prompt", "")
+        if custom_prompt and not isinstance(custom_prompt, str):
+            return "自定义提示词必须是字符串类型"
+
+        # 限制自定义提示词长度防止过长
+        if custom_prompt and len(custom_prompt) > 2000:
+            return f"自定义提示词过长，最大允许 2000 字符，当前 {len(custom_prompt)} 字符"
+
         return (
             dataset_id.strip(),
             llm_model,
@@ -216,4 +225,5 @@ class Text2SQLTool(Tool):
             dialect,
             top_k,
             retrieval_model,
+            custom_prompt.strip() if custom_prompt else "",
         )

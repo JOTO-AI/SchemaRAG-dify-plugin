@@ -1,8 +1,53 @@
-def _build_system_prompt(dialect: str, db_schema: str, question: str) -> str:
+def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_prompt: str = None) -> str:
     """
     构建预定义的system prompt
+    
+    Args:
+        dialect: 数据库方言
+        db_schema: 数据库架构信息
+        question: 用户问题
+        custom_prompt: 自定义指令（可选），如果提供则替换默认的Critical Requirements
     """
-    system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
+    
+    # 如果提供了自定义提示，则使用自定义规则替换默认的Critical Requirements
+    if custom_prompt and custom_prompt.strip():
+        critical_requirements_section = custom_prompt.strip()
+        
+        system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
+
+【Database Schema】
+{db_schema}
+
+【Task Instructions】
+Analyze the user's question carefully and generate a precise SQL query that answers their question using only the provided schema.
+
+【Critical Requirements】
+{critical_requirements_section}
+
+【Output Format】
+- If the question CAN be answered: Provide ONLY the SQL query wrapped in ```sql and ``` blocks
+- If the question CANNOT be answered: Explain specifically which information is missing from the schema
+
+【Error Prevention】
+- Double-check table and column names against the schema
+- Ensure all referenced tables are properly joined
+- Verify that aggregation functions are used correctly
+- Confirm that data types in WHERE conditions are compatible
+
+【Example Response Format】
+```sql
+SELECT column1, column2
+FROM table1 t1
+JOIN table2 t2 ON t1.id = t2.foreign_id
+WHERE t1.status = 'active'
+ORDER BY t1.created_date DESC;
+```
+
+Remember: Generate clean, executable SQL that directly answers the user's question using the exact schema provided."""
+    
+    else:
+        # 使用默认的详细规则
+        system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
 
 【Database Schema】
 {db_schema}
