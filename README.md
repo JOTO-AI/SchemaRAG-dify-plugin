@@ -1,10 +1,10 @@
 # SchemaRAG Database Schema RAG Plugin
 
-[![Version](https://img.shields.io/badge/version-0.0.7-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.0.8-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **Author:** joto  
-**Version:** 0.0.7  
+**Version:** 0.0.8  
 **Type:** tool  
 **Repository:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -106,6 +106,7 @@ print(result)
 - **Multi-Database Support**: Supports MySQL, PostgreSQL, MSSQL, Oracle, and DM SQL dialects
 - **Knowledge Base Retrieval**: Intelligent retrieval and matching based on database schema knowledge base
 - **Ready to Use**: Can be used directly after configuring the knowledge base, no additional setup required
+- **Customize propt rules**: Add custom to prompt words and configure custom rules
 
 #### Parameter Configuration
 
