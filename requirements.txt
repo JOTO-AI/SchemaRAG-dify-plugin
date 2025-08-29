@@ -10,6 +10,7 @@ tabulate
 # 额外的数据库驱动
 pymssql
 cx-Oracle
+dmPython
 # dameng-python  # 达梦数据库驱动
 
 # LLM 智能绘图模块依赖

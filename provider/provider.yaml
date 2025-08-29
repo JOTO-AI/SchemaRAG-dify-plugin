@@ -73,11 +73,6 @@ credentials_for_provider:
           en_US: Dameng
           zh_Hans: 达梦数据库
           pt_BR: Dameng
-      - value: doris
-        label:
-          en_US: Apache Doris
-          zh_Hans: Apache Doris
-          pt_BR: Apache Doris
 
   db_host:
     type: text-input
@@ -99,9 +94,9 @@ credentials_for_provider:
       zh_Hans: 数据库端口
       pt_BR: Database Port
     placeholder:
-      en_US: "Please input your database port (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, Dameng:5236, Doris:9030)"
-      zh_Hans: "请输入数据库端口 (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, 达梦:5236, Doris:9030)"
-      pt_BR: "Please input your database port (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, Dameng:5236, Doris:9030)"
+      en_US: "Please input your database port (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, Dameng:5236)"
+      zh_Hans: "请输入数据库端口 (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, 达梦:5236)"
+      pt_BR: "Please input your database port (MySQL:3306, PostgreSQL:5432, MSSQL:1433, Oracle:1521, Dameng:5236)"
     default: "3306"
 
   db_user:
@@ -139,6 +134,31 @@ credentials_for_provider:
       en_US: Database name
       zh_Hans: 数据库名称
       pt_BR: Database name
+
+
+  # build_rag:
+  #   type: boolean
+  #   required: true
+  #   label:
+  #     en_US: Build RAG
+  #     zh_Hans: 构建 RAG
+  #     pt_BR: Build RAG
+  #   placeholder:
+  #     en_US: Build RAG
+  #     zh_Hans: 构建 RAG
+  #     pt_BR: Build RAG
+
+  tables_name:
+    type: text-input
+    required: false
+    label:
+      en_US: Tables Name
+      zh_Hans: 数据表名称
+      pt_BR: Tables Name
+    placeholder:
+      en_US: Tables name(optional, multiple table names separated by commas)
+      zh_Hans: 数据表名称(可选, 多个表名用逗号分隔)
+      pt_BR: Tables name(optional, multiple table names separated by commas)
 
 supported_app_types:
   - workflow

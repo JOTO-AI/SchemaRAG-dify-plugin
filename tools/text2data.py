@@ -9,6 +9,7 @@ from service.database_service import DatabaseService
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
+import logging
 
 # 添加项目根目录到Python路径，以便导入service模块
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,6 +29,7 @@ class Text2DataTool(Tool):
         self.api_uri = self.runtime.credentials.get("api_uri")
         self.dataset_api_key = self.runtime.credentials.get("dataset_api_key")
         self.knowledge_service = KnowledgeService(self.api_uri, self.dataset_api_key)
+        self.logger = logging.getLogger(__name__)
 
         # 初始化数据库服务
         self.db_service = DatabaseService()
@@ -59,20 +61,20 @@ class Text2DataTool(Tool):
 
             # 验证必要参数
             if not dataset_id:
-                yield self.create_text_message("错误: 缺少知识库ID")
-                return
+                logging.error("错误: 缺少知识库ID")
+                raise ValueError("缺少知识库ID")
 
             if not content:
-                yield self.create_text_message("错误: 缺少问题内容")
-                return
+                logging.error("错误: 缺少问题内容")
+                raise ValueError("缺少问题内容")
 
             if not llm_model:
-                yield self.create_text_message("错误: 缺少LLM模型配置")
-                return
+                logging.error("错误: 缺少LLM模型配置")
+                raise ValueError("缺少LLM模型配置")
 
             if not self.api_uri or not self.dataset_api_key:
-                yield self.create_text_message("错误: 缺少API配置信息")
-                return
+                logging.error("错误: 缺少API配置信息")
+                raise ValueError("API配置无效")
 
             # 验证数据库配置
             if not all(
@@ -85,26 +87,26 @@ class Text2DataTool(Tool):
                     self.db_name,
                 ]
             ):
-                yield self.create_text_message("错误: 数据库配置不完整")
-                return
+                logging.error("错误: 数据库配置不完整")
+                raise ValueError("数据库配置无效")
 
             # 步骤1: 从知识库检索相关的schema信息
-            yield self.create_text_message("正在从知识库检索相关的数据库架构信息...")
+            logging.info("正在从知识库检索相关的数据库架构信息...")
 
             try:
                 schema_info = self.knowledge_service.retrieve_schema_from_dataset(
                     dataset_id, content, top_k, retrieval_model
                 )
             except Exception as e:
-                yield self.create_text_message(f"检索架构信息时发生错误: {str(e)}")
+                logging.error(f"检索架构信息时发生错误: {str(e)}")
                 schema_info = "未找到相关的数据库架构信息"
 
             if not schema_info or schema_info.strip() == "":
-                yield self.create_text_message("警告: 未从知识库检索到相关的架构信息")
+                logging.warning("未从知识库检索到相关的架构信息")
                 schema_info = "未找到相关的数据库架构信息"
 
             # 步骤2: 构建预定义的prompt并生成SQL
-            yield self.create_text_message("正在生成SQL查询...")
+            logging.info("正在生成SQL查询...")
 
             try:
                 system_prompt = text2sql_prompt._build_system_prompt(
@@ -132,26 +134,26 @@ class Text2DataTool(Tool):
                     )
 
                 if not sql_query:
-                    yield self.create_text_message("错误: 无法生成SQL查询")
-                    return
+                    logging.error("错误: 无法生成SQL查询")
+                    raise ValueError("生成的SQL查询为空")
 
                 # 清理SQL查询（移除markdown代码块标记等）
                 sql_query = self._clean_sql_query(sql_query)
 
                 if not sql_query or sql_query.strip() == "":
-                    yield self.create_text_message("错误: 生成的SQL查询为空")
-                    return
+                    logging.error("错误: 生成的SQL查询为空")
+                    raise ValueError("生成的SQL查询为空")
 
                 yield self.create_text_message(
                     f"生成的SQL查询:\n```sql\n{sql_query}\n```"
                 )
 
             except Exception as e:
-                yield self.create_text_message(f"生成SQL查询时发生错误: {str(e)}")
-                return
+                logging.error(f"生成SQL查询时发生错误: {str(e)}")
+                raise
 
             # 步骤3: 执行SQL查询
-            yield self.create_text_message("正在执行SQL查询...")
+            logging.info("正在执行SQL查询...")
 
             try:
                 results, columns = self.db_service.execute_query(
@@ -164,22 +166,20 @@ class Text2DataTool(Tool):
                     sql_query,
                 )
             except Exception as e:
-                yield self.create_text_message(f"执行SQL查询时发生错误: {str(e)}")
-                return
+                logging.error(f"执行SQL查询时发生错误: {str(e)}")
+                raise
 
             # 步骤4: 格式化输出
             if output_format == "summary":
                 # 生成数据摘要
-                yield self.create_text_message("正在生成数据摘要...")
+                logging.info("正在生成数据摘要...")
 
                 try:
                     # 先获取JSON格式的数据
                     json_data = self.db_service._format_output(results, columns, "json")
 
                     if not json_data or json_data.strip() == "":
-                        yield self.create_text_message(
-                            "警告: 查询结果为空，无法生成摘要"
-                        )
+                        logging.warning("警告: 查询结果为空，无法生成摘要")
                         return
 
                     # 使用LLM生成摘要
@@ -214,17 +214,17 @@ class Text2DataTool(Tool):
                             yield self.create_text_message(text=summary_result)
 
                 except Exception as e:
-                    yield self.create_text_message(f"生成摘要时发生错误: {str(e)}")
+                    logging.error(f"生成摘要时发生错误: {str(e)}")
                     # 如果摘要生成失败，返回原始数据
                     try:
                         formatted_output = self.db_service._format_output(
                             results, columns, "json"
                         )
-                        yield self.create_text_message(
+                        logging.warning(
                             f"摘要生成失败，返回原始数据:\n{formatted_output}"
                         )
                     except Exception as e2:
-                        yield self.create_text_message(f"数据格式化也失败了: {str(e2)}")
+                        logging.error(f"数据格式化也失败了: {str(e2)}")
             else:
                 # 返回格式化的数据
                 try:
@@ -233,10 +233,12 @@ class Text2DataTool(Tool):
                     )
                     yield self.create_text_message(text=formatted_output)
                 except Exception as e:
-                    yield self.create_text_message(f"格式化输出时发生错误: {str(e)}")
+                    logging.error(f"格式化输出时发生错误: {str(e)}")
+                    raise ValueError(f"格式化输出时发生错误: {str(e)}")
 
         except Exception as e:
-            yield self.create_text_message(f"执行过程中发生错误: {str(e)}")
+            logging.error(f"执行过程中发生错误: {str(e)}")
+            raise ValueError(f"执行过程中发生错误: {str(e)}")
 
     def _clean_sql_query(self, sql_query: str) -> str:
         """

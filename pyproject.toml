@@ -19,6 +19,8 @@ dependencies = [
     "cx-Oracle",
     # "dameng-python",  # 达梦数据库驱动，如果需要的话取消注释
     "matplotlib>=3.10.5",
+    "pytest>=8.4.1",
+    "dmpython>=2.5.22",
 ]
 
 [build-system]

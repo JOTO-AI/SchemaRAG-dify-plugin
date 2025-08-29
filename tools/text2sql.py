@@ -82,17 +82,17 @@ class Text2SQLTool(Tool):
         """
         # 早期配置验证
         if not self._config_validated:
-            yield self.create_text_message("错误: 缺少API配置信息")
-            return
+            logging.error("错误: 缺少API配置信息")
+            raise ValueError("API配置无效")
 
         try:
             # 验证和获取参数
             params_result = self._validate_and_extract_parameters(tool_parameters)
             if isinstance(params_result, str):  # 错误消息
-                yield self.create_text_message(f"错误: {params_result}")
-                return
+                logging.error(f"错误: {params_result}")
+                raise ValueError(params_result)
 
-            dataset_id, llm_model, content, dialect, top_k, retrieval_model = (
+            dataset_id, llm_model, content, dialect, top_k, retrieval_model, custom_prompt = (
                 params_result
             )
 
@@ -109,11 +109,11 @@ class Text2SQLTool(Tool):
                 self.logger.warning("未检索到相关的架构信息")
                 schema_info = "未找到相关的数据库架构信息"
 
-            # 步骤2: 构建预定义的prompt
+            # 步骤2: 构建预定义的prompt（包含自定义提示）
             system_prompt = text2sql_prompt._build_system_prompt(
-                dialect, schema_info, content
+                dialect, schema_info, content, custom_prompt
             )
-
+            
             # 步骤3: 调用LLM生成SQL
             self.logger.info("开始调用LLM生成SQL查询")
 
@@ -140,7 +140,7 @@ class Text2SQLTool(Tool):
 
                     # 防止过长的响应
                     if total_content_length > 50000:  # 50KB限制
-                        yield self.create_text_message("警告: 响应内容过长，已截断")
+                        logging.warning("警告: 响应内容过长，已截断")
                         break
 
                     yield self.create_text_message(text=sql_content)
@@ -157,17 +157,17 @@ class Text2SQLTool(Tool):
 
         except ValueError as e:
             self.logger.error(f"参数验证错误: {str(e)}")
-            yield self.create_text_message(f"参数错误: {str(e)}")
+            raise ValueError(f"参数错误: {str(e)}")
         except ConnectionError as e:
             self.logger.error(f"网络连接错误: {str(e)}")
-            yield self.create_text_message(f"网络连接错误: {str(e)}")
+            raise ValueError(f"网络连接错误: {str(e)}")
         except Exception as e:
             self.logger.error(f"SQL生成异常: {str(e)}")
-            yield self.create_text_message(f"生成SQL时发生错误: {str(e)}")
+            raise ValueError(f"SQL生成异常: {str(e)}")
 
     def _validate_and_extract_parameters(
         self, tool_parameters: dict[str, Any]
-    ) -> Union[Tuple[str, Any, str, str, int, str], str]:
+    ) -> Union[Tuple[str, Any, str, str, int, str, str], str]:
         """验证并提取工具参数，返回参数元组或错误消息"""
         # 验证必要参数
         dataset_id = tool_parameters.get("dataset_id")
@@ -209,6 +209,15 @@ class Text2SQLTool(Tool):
         ]:
             return f"不支持的检索模型: {retrieval_model}"
 
+        # 获取自定义提示词（可选参数）
+        custom_prompt = tool_parameters.get("custom_prompt", "")
+        if custom_prompt and not isinstance(custom_prompt, str):
+            return "自定义提示词必须是字符串类型"
+
+        # 限制自定义提示词长度防止过长
+        if custom_prompt and len(custom_prompt) > 2000:
+            return f"自定义提示词过长，最大允许 2000 字符，当前 {len(custom_prompt)} 字符"
+
         return (
             dataset_id.strip(),
             llm_model,
@@ -216,4 +225,5 @@ class Text2SQLTool(Tool):
             dialect,
             top_k,
             retrieval_model,
+            custom_prompt.strip() if custom_prompt else "",
         )

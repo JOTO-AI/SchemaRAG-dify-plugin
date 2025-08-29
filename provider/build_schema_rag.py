@@ -46,6 +46,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
         db_user = credentials.get("db_user")
         db_password = credentials.get("db_password")
         db_name = credentials.get("db_name")
+        # build_rag = credentials.get("build_rag", True)
 
         # 验证API相关参数
         if not api_uri:
@@ -76,8 +77,13 @@ class SchemaRAGBuilderProvider(ToolProvider):
             if not db_name:
                 raise ValueError("Database name is required")
 
-        # 凭据验证成功后，自动构建schema知识库
         self._build_schema_rag(credentials)
+        # 凭据验证成功后，根据build_rag参数决定是否构建schema知识库
+        # if build_rag:
+        #     self._build_schema_rag(credentials)
+        # else:
+        #     # 记录跳过构建的信息
+        #     logging.info("🚫 build_rag参数为False，跳过Schema RAG构建")
 
     def _build_schema_rag(self, credentials: dict[str, Any]) -> None:
         """
@@ -137,8 +143,17 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 max_tokens=1000,
             )
 
+            # 解析表名参数
+            tables_name = credentials.get("tables_name", "")
+            include_tables = None
+            if tables_name and tables_name.strip():
+                include_tables = [table.strip() for table in tables_name.split(",") if table.strip()]
+                logging.info(f"📋 指定构建以下表的RAG: {include_tables}")
+            else:
+                logging.info("📋 将构建所有表的RAG")
+
             # 创建构建器实例
-            builder = SchemaRAGBuilder(db_config, logger_config, dify_config)
+            builder = SchemaRAGBuilder(db_config, logger_config, dify_config, include_tables)
 
             try:
                 # 确保output目录存在

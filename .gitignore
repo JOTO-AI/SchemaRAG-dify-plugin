@@ -175,8 +175,7 @@ cython_debug/
 .AppleDouble
 .LSOverride
 
-# output file
-./output/
-
 # plugins
 *.difypkg
+
+/output
