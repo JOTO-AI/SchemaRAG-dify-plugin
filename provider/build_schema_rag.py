@@ -94,8 +94,8 @@ class SchemaRAGBuilderProvider(ToolProvider):
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
             # 确保logs目录存在
-            logs_dir = os.path.join(project_root, "logs")
-            os.makedirs(logs_dir, exist_ok=True)
+            # logs_dir = os.path.join(project_root, "logs")
+            # os.makedirs(logs_dir, exist_ok=True)
 
             # 创建数据库配置
             db_type = credentials.get("db_type")
@@ -130,7 +130,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
 
             # 创建日志配置
             logger_config = LoggerConfig(
-                log_level="INFO", log_file=os.path.join(logs_dir, "schema_builder.log")
+                log_level="INFO"
             )
 
             # 创建Dify集成配置
@@ -157,8 +157,8 @@ class SchemaRAGBuilderProvider(ToolProvider):
 
             try:
                 # 确保output目录存在
-                output_dir = os.path.join(project_root, "output")
-                os.makedirs(output_dir, exist_ok=True)
+                # output_dir = os.path.join(project_root, "output")
+                # os.makedirs(output_dir, exist_ok=True)
 
                 # 生成数据字典
                 # schema_file_path = os.path.join(

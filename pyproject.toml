@@ -21,6 +21,7 @@ dependencies = [
     "matplotlib>=3.10.5",
     "pytest>=8.4.1",
     "dmpython>=2.5.22",
+    "psutil>=7.0.0",
 ]
 
 [build-system]
