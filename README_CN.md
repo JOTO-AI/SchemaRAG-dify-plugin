@@ -47,7 +47,7 @@ SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够�
 | MySQL | 3306 | pymysql | `mysql+pymysql://user:password@host:port/database` |
 | PostgreSQL | 5432 | psycopg2-binary | `postgresql://user:password@host:port/database` |
 | Microsoft SQL Server | 1433 | pymssql | `mssql+pymssql://user:password@host:port/database` |
-| Oracle | 1521 | cx-Oracle | `oracle+cx_Oracle://user:password@host:port/database` |
+| Oracle | 1521 | oracledb | `oracle+oracledb://user:password@host:port/database` |
 | 达梦数据库 | 5236 | dm+pymysql | `dm+pymysql://user:password@host:port/database` |
 
 ---

@@ -9,7 +9,7 @@ pandas
 tabulate
 # 额外的数据库驱动
 pymssql
-cx-Oracle
+oracledb
 dmPython
 # dameng-python  # 达梦数据库驱动
 
