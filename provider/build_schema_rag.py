@@ -2,6 +2,7 @@ import os
 from typing import Any
 import sys
 import logging
+from venv import logger
 
 from tools.text2data import Text2DataTool
 
@@ -14,6 +15,7 @@ from tools.text2sql import Text2SQLTool
 from tools.sql_executer import SQLExecuterTool
 from config import DatabaseConfig, LoggerConfig, DifyUploadConfig
 from service.schema_builder import SchemaRAGBuilder
+from dify_plugin.config.logger_format import plugin_logger_handler
 
 
 class SchemaRAGBuilderProvider(ToolProvider):
@@ -91,7 +93,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
         """
         try:
             # 获取项目根目录
-            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
             # 确保logs目录存在
             # logs_dir = os.path.join(project_root, "logs")
@@ -132,7 +134,9 @@ class SchemaRAGBuilderProvider(ToolProvider):
             logger_config = LoggerConfig(
                 log_level="INFO"
             )
-
+            logger = logging.getLogger(__name__)
+            logger.setLevel(logging.INFO)
+            logger.addHandler(plugin_logger_handler)
             # 创建Dify集成配置
             dify_config = DifyUploadConfig(
                 api_key=credentials.get("dataset_api_key"),

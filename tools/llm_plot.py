@@ -14,6 +14,7 @@ from pathlib import Path
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
+from dify_plugin.config.logger_format import plugin_logger_handler
 
 # 添加项目根目录到Python路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,7 +31,7 @@ from core.llm_plot import (
 
 # 配置日志
 logger = logging.getLogger(__name__)
-
+logger.addHandler(plugin_logger_handler)
 
 class LLMPlotTool(Tool):
     """LLM 智能绘图工具 - Dify 插件"""

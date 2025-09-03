@@ -8,7 +8,7 @@ from prompt.summary_prompt import _data_summary_prompt
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
-
+from dify_plugin.config.logger_format import plugin_logger_handler
 # 添加项目根目录到Python路径，以便导入service模块
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
@@ -29,6 +29,7 @@ class DataSummaryTool(Tool):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
+        self.logger.addHandler(plugin_logger_handler)
 
     def _validate_input_data(
         self, data_content: str, query: str, custom_rules: Optional[str] = None

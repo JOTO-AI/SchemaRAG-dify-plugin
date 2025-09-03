@@ -9,6 +9,9 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
+# 导入 logging 和自定义处理器
+from dify_plugin.config.logger_format import plugin_logger_handler
+
 # 添加项目根目录到Python路径，以便导入service模块
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
@@ -34,6 +37,7 @@ class Text2SQLTool(Tool):
         self._knowledge_service = None
         self._config_validated = False
         self.logger = logging.getLogger(__name__)
+        self.logger.addHandler(plugin_logger_handler)
 
         # 初始化时验证配置
         self._validate_config()

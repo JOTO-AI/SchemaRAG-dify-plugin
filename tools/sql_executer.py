@@ -14,6 +14,7 @@ sys.path.append(
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from service.database_service import DatabaseService
+from dify_plugin.config.logger_format import plugin_logger_handler
 
 
 class PerformanceConfig:
@@ -52,6 +53,7 @@ class SQLExecuterTool(Tool):
         self._db_config = None
         self._config_validated = False
         self.logger = logging.getLogger(__name__)
+        self.logger.addHandler(plugin_logger_handler)
 
         # 延迟初始化配置
         self._initialize_config()
