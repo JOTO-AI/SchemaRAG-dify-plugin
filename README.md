@@ -9,7 +9,11 @@
 **Repository:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
 [中文文档](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/blob/main/README_CN.md)
+
+
 ---
+
+<img src="./_assets/logo.jpg" height="100" alt="logo" style="border-radius:10px;">
 
 ## Overview
 
