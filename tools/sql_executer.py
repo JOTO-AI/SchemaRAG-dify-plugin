@@ -272,8 +272,6 @@ class SQLExecuterTool(Tool):
                 if re.search(pattern, sql_lower, re.IGNORECASE):
                     raise ValueError(f"检测到危险的SQL操作，查询被拒绝")
 
-
-
             return cleaned_sql
 
         except ValueError:

@@ -41,21 +41,30 @@ class DifyUploader:
             self.logger.info(f"从缓存中获取数据集ID: {dataset_name}")
             return self._dataset_cache[dataset_name]
 
-        try:
-            # 客户端成功时返回字典，失败时应抛出异常
-            response_data = self.client.list_datasets().json()
-            datasets = response_data.get("data", [])
-            for dataset in datasets:
-                if dataset.get("name") == dataset_name:
-                    dataset_id = dataset.get("id")
-                    self.logger.info(
-                        f"找到现有数据集: {dataset_name} (ID: {dataset_id})"
-                    )
-                    self._dataset_cache[dataset_name] = dataset_id
-                    return dataset_id
-        except Exception as e:
-            self.logger.warning(f"查找现有数据集时出错: {e}")
+        # 首先尝试查找现有数据集
+        def try_find_existing_dataset():
+            try:
+                response_data = self.client.list_datasets().json()
+                datasets = response_data.get("data", [])
+                for dataset in datasets:
+                    if dataset.get("name") == dataset_name:
+                        dataset_id = dataset.get("id")
+                        self.logger.info(
+                            f"找到现有数据集: {dataset_name} (ID: {dataset_id})"
+                        )
+                        self._dataset_cache[dataset_name] = dataset_id
+                        return dataset_id
+                return None
+            except Exception as e:
+                self.logger.warning(f"查找现有数据集时出错: {e}")
+                return None
 
+        # 第一次尝试查找现有数据集
+        existing_dataset_id = try_find_existing_dataset()
+        if existing_dataset_id:
+            return existing_dataset_id
+
+        # 如果没找到，尝试创建新数据集
         self.logger.info(f"未找到现有数据集，将创建新数据集: {dataset_name}")
         try:
             response_data = self.client.create_dataset(
@@ -71,6 +80,19 @@ class DifyUploader:
             self._dataset_cache[dataset_name] = dataset_id
             return dataset_id
         except Exception as e:
+            # 如果创建失败且错误提示数据集已存在，再次尝试查找
+            if "already exists" in str(e) or "409" in str(e):
+                self.logger.info(f"数据集 {dataset_name} 已存在，重新查找...")
+                existing_dataset_id = try_find_existing_dataset()
+                if existing_dataset_id:
+                    return existing_dataset_id
+                else:
+                    # 如果还是找不到，可能是权限问题或其他问题，但不应该抛出异常
+                    # 因为数据集确实存在，只是我们无法访问它
+                    self.logger.warning(f"数据集 {dataset_name} 应该存在但无法找到，可能存在权限问题")
+                    # 尝试使用数据集名称作为最后的手段
+                    raise Exception(f"数据集 {dataset_name} 已存在但无法获取其ID，请检查权限设置")
+            
             self.logger.error(f"创建数据集 {dataset_name} 失败: {e}")
             raise
 

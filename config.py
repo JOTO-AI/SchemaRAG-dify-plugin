@@ -49,9 +49,10 @@ class DatabaseConfig:
             return f"mssql+pymssql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "oracle":
             return f"oracle+oracledb://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-        # 达梦
         elif self.type == "dameng":
             return f"dm+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        elif self.type == "doris":
+            return f"doris+mysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
         else:
             raise ValueError(f"Unsupported database type: {self.type}")
 
@@ -61,7 +62,7 @@ class LoggerConfig:
     """日志配置"""
 
     log_level: str = get_env("LOG_LEVEL", "INFO")
-    log_file: Optional[str] = get_env("LOG_FILE", None)
+    # log_file: Optional[str] = get_env("LOG_FILE", None)
 
 
 @dataclass

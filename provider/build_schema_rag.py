@@ -65,6 +65,16 @@ class SchemaRAGBuilderProvider(ToolProvider):
         if db_type == "sqlite":
             if not db_name:
                 raise ValueError("Database name (file path) is required for SQLite")
+        elif db_type == "doris":
+            # Doris需要host, port, user, password, database
+            if not db_host:
+                raise ValueError("Doris database host is required")
+            if not db_user:
+                raise ValueError("Doris database user is required")
+            if not db_password:
+                raise ValueError("Doris database password is required")
+            if not db_name:
+                raise ValueError("Doris database name is required")
         else:
             # 其他数据库类型需要完整的连接信息
             if not db_host:
@@ -119,6 +129,15 @@ class SchemaRAGBuilderProvider(ToolProvider):
                     user="",  # SQLite 不需要用户名
                     password="",  # SQLite 不需要密码
                     database=credentials.get("db_name"),  # SQLite 的文件路径
+                )
+            elif db_type == "doris":
+                db_config = DatabaseConfig(
+                    type=db_type,
+                    host=credentials.get("db_host"),
+                    port=port,
+                    user=credentials.get("db_user"),
+                    password=credentials.get("db_password"),
+                    database=credentials.get("db_name"),
                 )
             else:
                 db_config = DatabaseConfig(
