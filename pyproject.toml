@@ -16,11 +16,12 @@ dependencies = [
     "tabulate>=0.9.0",
     # 额外的数据库驱动
     "pymssql",
-    "cx-Oracle",
+    "oracledb",
     # "dameng-python",  # 达梦数据库驱动，如果需要的话取消注释
     "matplotlib>=3.10.5",
     "pytest>=8.4.1",
     "dmpython>=2.5.22",
+    "psutil>=7.0.0",
 ]
 
 [build-system]

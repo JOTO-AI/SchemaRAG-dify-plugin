@@ -14,6 +14,7 @@ sys.path.append(
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from service.database_service import DatabaseService
+from dify_plugin.config.logger_format import plugin_logger_handler
 
 
 class PerformanceConfig:
@@ -52,6 +53,7 @@ class SQLExecuterTool(Tool):
         self._db_config = None
         self._config_validated = False
         self.logger = logging.getLogger(__name__)
+        self.logger.addHandler(plugin_logger_handler)
 
         # 延迟初始化配置
         self._initialize_config()
@@ -269,8 +271,6 @@ class SQLExecuterTool(Tool):
             for pattern in dangerous_patterns:
                 if re.search(pattern, sql_lower, re.IGNORECASE):
                     raise ValueError(f"检测到危险的SQL操作，查询被拒绝")
-
-
 
             return cleaned_sql
 

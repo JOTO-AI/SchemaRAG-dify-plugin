@@ -23,10 +23,10 @@ parameters:
       zh_Hans: 知识库ID
       pt_BR: Dataset ID
     human_description:
-      en_US: The ID of the Dify dataset containing the database schema
-      zh_Hans: 包含数据库架构的Dify知识库ID
-      pt_BR: The ID of the Dify dataset containing the database schema
-    llm_description: The dataset ID from Dify knowledge base containing database schema information
+      en_US: The ID of the Dify dataset containing the database schema. Supports multiple datasets separated by commas for comprehensive schema coverage.
+      zh_Hans: 包含数据库架构的Dify知识库ID。支持逗号分隔的多个知识库ID以获得更全面的架构覆盖。
+      pt_BR: The ID of the Dify dataset containing the database schema. Supports multiple datasets separated by commas for comprehensive schema coverage.
+    llm_description: The dataset ID from Dify knowledge base containing database schema information. Can accept multiple dataset IDs separated by commas (e.g., "dataset1,dataset2,dataset3") for retrieving from multiple knowledge bases concurrently.
     form: llm
 
   - name: llm
@@ -170,6 +170,24 @@ parameters:
       en_US: "e.g., Always use explicit column names, avoid SELECT *, and prefer JOIN over subqueries for better performance."
       zh_Hans: "例如：始终使用明确的列名，避免 SELECT *，优先使用 JOIN 而不是子查询以获得更好的性能。"
       pt_BR: "e.g., Always use explicit column names, avoid SELECT *, and prefer JOIN over subqueries for better performance."
+
+  - name: example_dataset_id
+    type: string
+    required: false
+    label:
+      en_US: Example Dataset ID
+      zh_Hans: 示例知识库ID
+      pt_BR: Example Dataset ID
+    human_description:
+      en_US: The ID of the Dify dataset containing SQL examples. Supports multiple datasets separated by commas for comprehensive example coverage.
+      zh_Hans: 包含SQL示例的Dify知识库ID。支持逗号分隔的多个知识库ID以获得更全面的示例覆盖。
+      pt_BR: The ID of the Dify dataset containing SQL examples. Supports multiple datasets separated by commas for comprehensive example coverage.
+    llm_description: Optional dataset ID from Dify knowledge base containing SQL examples that will be retrieved and added to the prompt to improve SQL generation accuracy. Can accept multiple dataset IDs separated by commas.
+    form: llm
+    placeholder:
+      en_US: "e.g., examples_dataset_1,examples_dataset_2"
+      zh_Hans: "例如：examples_dataset_1,examples_dataset_2"
+      pt_BR: "e.g., examples_dataset_1,examples_dataset_2"
 
 extra:
   python:

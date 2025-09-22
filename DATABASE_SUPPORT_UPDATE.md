@@ -11,7 +11,7 @@
 | MySQL | 3306 | pymysql | `mysql+pymysql://user:password@host:port/database` |
 | PostgreSQL | 5432 | psycopg2-binary | `postgresql://user:password@host:port/database` |
 | Microsoft SQL Server | 1433 | pymssql | `mssql+pymssql://user:password@host:port/database` |
-| Oracle | 1521 | cx-Oracle | `oracle+cx_Oracle://user:password@host:port/database` |
+| Oracle | 1521 | oracledb | `oracle+oracledb://user:password@host:port/database` |
 | 达梦数据库 | 5236 | dm+pymysql | `dm+pymysql://user:password@host:port/database` |
 
 ## 更新的文件
@@ -58,7 +58,7 @@
 
 - **添加了新的数据库驱动程序**：
   - `pymssql` - Microsoft SQL Server 驱动
-  - `cx-Oracle` - Oracle 数据库驱动
+  - `oracledb` - Oracle 数据库驱动
   - `dameng-python` - 达梦数据库驱动（已注释，按需启用）
 
 

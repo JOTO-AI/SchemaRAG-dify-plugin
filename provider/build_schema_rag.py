@@ -2,6 +2,7 @@ import os
 from typing import Any
 import sys
 import logging
+from venv import logger
 
 from tools.text2data import Text2DataTool
 
@@ -14,6 +15,7 @@ from tools.text2sql import Text2SQLTool
 from tools.sql_executer import SQLExecuterTool
 from config import DatabaseConfig, LoggerConfig, DifyUploadConfig
 from service.schema_builder import SchemaRAGBuilder
+from dify_plugin.config.logger_format import plugin_logger_handler
 
 
 class SchemaRAGBuilderProvider(ToolProvider):
@@ -63,6 +65,16 @@ class SchemaRAGBuilderProvider(ToolProvider):
         if db_type == "sqlite":
             if not db_name:
                 raise ValueError("Database name (file path) is required for SQLite")
+        elif db_type == "doris":
+            # Doris需要host, port, user, password, database
+            if not db_host:
+                raise ValueError("Doris database host is required")
+            if not db_user:
+                raise ValueError("Doris database user is required")
+            if not db_password:
+                raise ValueError("Doris database password is required")
+            if not db_name:
+                raise ValueError("Doris database name is required")
         else:
             # 其他数据库类型需要完整的连接信息
             if not db_host:
@@ -91,11 +103,11 @@ class SchemaRAGBuilderProvider(ToolProvider):
         """
         try:
             # 获取项目根目录
-            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
             # 确保logs目录存在
-            logs_dir = os.path.join(project_root, "logs")
-            os.makedirs(logs_dir, exist_ok=True)
+            # logs_dir = os.path.join(project_root, "logs")
+            # os.makedirs(logs_dir, exist_ok=True)
 
             # 创建数据库配置
             db_type = credentials.get("db_type")
@@ -118,6 +130,15 @@ class SchemaRAGBuilderProvider(ToolProvider):
                     password="",  # SQLite 不需要密码
                     database=credentials.get("db_name"),  # SQLite 的文件路径
                 )
+            elif db_type == "doris":
+                db_config = DatabaseConfig(
+                    type=db_type,
+                    host=credentials.get("db_host"),
+                    port=port,
+                    user=credentials.get("db_user"),
+                    password=credentials.get("db_password"),
+                    database=credentials.get("db_name"),
+                )
             else:
                 db_config = DatabaseConfig(
                     type=db_type,
@@ -130,9 +151,11 @@ class SchemaRAGBuilderProvider(ToolProvider):
 
             # 创建日志配置
             logger_config = LoggerConfig(
-                log_level="INFO", log_file=os.path.join(logs_dir, "schema_builder.log")
+                log_level="INFO"
             )
-
+            logger = logging.getLogger(__name__)
+            logger.setLevel(logging.INFO)
+            logger.addHandler(plugin_logger_handler)
             # 创建Dify集成配置
             dify_config = DifyUploadConfig(
                 api_key=credentials.get("dataset_api_key"),
@@ -157,8 +180,8 @@ class SchemaRAGBuilderProvider(ToolProvider):
 
             try:
                 # 确保output目录存在
-                output_dir = os.path.join(project_root, "output")
-                os.makedirs(output_dir, exist_ok=True)
+                # output_dir = os.path.join(project_root, "output")
+                # os.makedirs(output_dir, exist_ok=True)
 
                 # 生成数据字典
                 # schema_file_path = os.path.join(

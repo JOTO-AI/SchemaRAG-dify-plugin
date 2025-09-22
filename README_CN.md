@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.0.8-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.0.8  
+**版本:** 0.1.0  
 **类型:** 工具
 **仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -47,7 +47,7 @@ SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够�
 | MySQL | 3306 | pymysql | `mysql+pymysql://user:password@host:port/database` |
 | PostgreSQL | 5432 | psycopg2-binary | `postgresql://user:password@host:port/database` |
 | Microsoft SQL Server | 1433 | pymssql | `mssql+pymssql://user:password@host:port/database` |
-| Oracle | 1521 | cx-Oracle | `oracle+cx_Oracle://user:password@host:port/database` |
+| Oracle | 1521 | oracledb | `oracle+oracledb://user:password@host:port/database` |
 | 达梦数据库 | 5236 | dm+pymysql | `dm+pymysql://user:password@host:port/database` |
 
 ---

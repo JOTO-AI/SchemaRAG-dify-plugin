@@ -1,10 +1,10 @@
 # SchemaRAG Database Schema RAG Plugin
 
-[![Version](https://img.shields.io/badge/version-0.0.8-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **Author:** joto  
-**Version:** 0.0.8  
+**Version:** 0.1.0  
 **Type:** tool  
 **Repository:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -48,7 +48,7 @@ SchemaRAG is a database schema RAG plugin designed specifically for the Dify pla
 | MySQL | 3306 | pymysql | `mysql+pymysql://user:password@host:port/database` |
 | PostgreSQL | 5432 | psycopg2-binary | `postgresql://user:password@host:port/database` |
 | Microsoft SQL Server | 1433 | pymssql | `mssql+pymssql://user:password@host:port/database` |
-| Oracle | 1521 | cx-Oracle | `oracle+cx_Oracle://user:password@host:port/database` |
+| Oracle | 1521 | oracledb | `oracle+oracledb://user:password@host:port/database` |
 | DM Database (达梦) | 5236 | dm+pymysql | `dm+pymysql://user:password@host:port/database` |
 
 ---

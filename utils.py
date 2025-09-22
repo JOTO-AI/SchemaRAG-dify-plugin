@@ -100,8 +100,8 @@ class Logger:
         handlers = [logging.StreamHandler()]
 
         # Only add FileHandler if log_file is not None
-        if self.config.log_file is not None:
-            handlers.append(logging.FileHandler(self.config.log_file, encoding="utf-8"))
+        # if self.config.log_file is not None:
+        #     handlers.append(logging.FileHandler(self.config.log_file, encoding="utf-8"))
 
         # 将日志级别转换为大写，以匹配logging模块的常量
         log_level = self.config.log_level.upper()

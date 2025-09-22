@@ -9,7 +9,7 @@ pandas
 tabulate
 # 额外的数据库驱动
 pymssql
-cx-Oracle
+oracledb
 dmPython
 # dameng-python  # 达梦数据库驱动
 
@@ -17,3 +17,4 @@ dmPython
 matplotlib>=3.5.0
 pydantic>=2.0.0
 numpy>=1.20.0
+psutil>=5.9.0  # 用于性能监控
