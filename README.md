@@ -10,7 +10,6 @@
 
 [中文文档](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/blob/main/README_CN.md)
 
-
 ---
 
 <img src="./_assets/logo.jpg" height="100" alt="logo" style="border-radius:10px;">
@@ -142,14 +141,43 @@ print(result)
 | output_format | select | Yes | Output format (JSON/Markdown) |
 | max_line | int | No | Maximum number of query rows (default 1000) |
 
-### 3. text2data Tool (Removed)
+### 3. sql_executer_cust Tool
+
+**Custom SQL Query Execution Tool** - Custom database connection and safely execute SQL queries to return formatted results
+
+#### Core Features
+
+- **Custom Database Connection**: Supports multiple databases without plugin configuration
+- **Safe Execution**: Only supports SELECT queries to ensure data security
+- **Output Control**: Provides interface to control maximum query rows to prevent excessive data queries
+- **Multi-Format Output**: Supports JSON and Markdown output formats
+- **Direct Connection**: Direct database connection for query execution, real-time results
+- **Error Handling**: Comprehensive error handling mechanism with detailed error information
+
+#### Parameter Configuration
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| database_url | string | Yes | Database connection URL |
+| sql | string | Yes | SQL query statement to execute |
+| output_format | select | Yes | Output format (JSON/Markdown) |
+| max_line | int | No | Maximum number of query rows (default 1000) |
+
+Database connection URL examples:
+mysql: mysql://user:password@host:port/dbname
+postgresql: postgresql://user:password@host:port/dbname
+dameng: dameng://user:password@host:port/dbname
+mssql: mssql://user:password@host:port/dbname
+oracle: oracle://user:password@host:port/dbname
+
+### 4. text2data Tool (Removed)
 
 **Notice:**
 This plugin was removed in v0.0.7 because using this plugin in Dify version 1.7.1 will cause the workflow front-end to crash. The subsequent Dify will fix [dify issue](https://github.com/langgenius/dify/issues/23154). Please be careful with this tool.
 
 Encapsulates the above two tools, ready to use out of the box, with added LLM summarization functionality to summarize query data into reports.
 
-### 4. data_summary Tool
+### 5. data_summary Tool
 
 **Data Summary Analysis Tool** - Intelligent data content analysis and summarization using large language models
 
@@ -168,6 +196,28 @@ Encapsulates the above two tools, ready to use out of the box, with added LLM su
 | query | string | Yes | Analysis query or focus area |
 | custom_rules | string | No | Custom analysis rules |
 | user_prompt | string | No | Custom prompt |
+
+### 6. llm_chart_generator Tool
+
+**LLM Intelligent Chart Generation Module** - Intelligent chart generation functionality based on large language models, providing highly maintainable end-to-end chart solutions
+
+#### Features
+
+- **Intelligent Analysis**: Automatically analyzes user questions and data, intelligently selects the most suitable chart type
+- **Multi-Chart Support**: Supports mainstream charts such as bar charts, line charts, pie charts, scatter plots, histograms
+- **High Maintainability**: Modular design with clear interfaces, easy to extend and maintain
+- **Unified Standards**: Chart configuration uses standardized JSON format for easy integration and parsing
+- **Fallback Solutions**: Automatically falls back to table display when chart generation fails
+- **Configuration Validation**: Comprehensive configuration validation and error handling mechanisms to ensure stability
+
+#### Configuration Options
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| user_question | string | Yes | User question describing the chart type and requirements (e.g., sales trends, market share) |
+| data | string | Yes | Data for visualization, supports JSON, CSV, or structured data |
+| llm | model-selector | Yes | Large language model for analysis and chart generation |
+| context | string | No | Additional context or requirements for chart generation (optional) |
 
 ---
 

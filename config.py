@@ -50,7 +50,7 @@ class DatabaseConfig:
         elif self.type == "oracle":
             return f"oracle+oracledb://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "dameng":
-            return f"dm+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+            return f"dm+dmPython://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "doris":
             return f"doris+mysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
         else:

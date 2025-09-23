@@ -139,14 +139,43 @@ print(result)
 | output_format | select | 是 | 输出格式（JSON/Markdown）|
 | max_line | int | 否 | 查询到的最大行数（默认1000行）|
 
-### 3. text2data 工具（删除）
+### 3. sql_executer_cust 工具
+
+**自定义SQL查询执行工具** - 自定义数据库并安全执行SQL查询并返回格式化结果
+
+#### 核心功能
+
+- **自定义数据库连接**：支持多种数据库无需配置插件即可用
+- **安全执行**: 仅支持SELECT查询，确保数据安全
+- **最大输出控制**： 提供接口控制最大查询行数，方式查询数据过多。
+- **多格式输出**: 支持JSON和Markdown两种输出格式
+- **直接连接**: 直接连接数据库执行查询，实时获取结果
+- **错误处理**: 完善的错误处理机制，提供详细的错误信息
+
+#### 参数说明
+
+| 参数名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| database_url | string | 是 | 数据库连接url |
+| sql | string | 是 | 要执行的SQL查询语句 |
+| output_format | select | 是 | 输出格式（JSON/Markdown）|
+| max_line | int | 否 | 查询到的最大行数（默认1000行）|
+
+数据库连接url示例：
+mysql：mysql://user:password@host:port/dbname
+postgresql: postgresql://user:password@host:port/dbname
+dameng: dameng://user:password@host:port/dbname
+mssql: mssql://user:password@host:port/dbname
+oracle: oracle://user:password@host:port/dbname
+
+### 4. text2data 工具（删除）
 
 **注意：**
 此插件在v0.0.7移除，原因是在dify版本1.7.1使用此插件会导致工作流前端崩溃，后续dify会修复[dify issue](https://github.com/langgenius/dify/issues/23154)。请注意版本慎用此工具。
 
 封装上述两种工具，开箱即用，增加 LLM 总结功能，将查询的数据总结成报告输出。
 
-### 4. data_summary 工具
+### 5. data_summary 工具
 
 **数据总结分析工具** - 使用大语言模型对数据内容进行智能分析和总结
 
@@ -165,6 +194,29 @@ print(result)
 | query | string | 是 | 分析查询或关注领域 |
 | custom_rules | string | 否 | 自定义分析规则 |
 | user_prompt | string | 否 | 自定义prompt |
+
+### 6. llm_chart_generator 工具
+
+**LLM 智能绘图模块** - 基于大语言模型的智能图表生成功能，提供高可维护的端到端图表解决方案
+
+#### 功能特性
+
+- **智能分析**: 自动分析用户问题和数据，智能选择最合适的图表类型
+- **多图表支持**: 支持柱状图、折线图、饼图、散点图、直方图等主流图表
+- **高可维护性**: 模块化设计，接口清晰，易于扩展和维护
+- **统一规范**: 图表配置采用标准化 JSON 格式，便于集成和解析
+- **降级方案**: 图表生成失败时自动降级为表格等展示方式
+- **配置验证**: 完善的配置校验和错误处理机制，保障稳定性
+
+#### 配置选项
+
+| 参数名         | 类型           | 必填 | 描述                                                         |
+|----------------|----------------|------|--------------------------------------------------------------|
+| user_question  | string         | 是   | 用户问题，描述需要生成的图表类型和需求（如销售趋势、市场份额）|
+| data           | string         | 是   | 用于可视化的数据，支持 JSON、CSV 或结构化数据                |
+| llm            | model-selector | 是   | 用于分析和生成图表的大语言模型                               |
+| context        | string         | 否   | 图表生成的额外上下文或要求（可选）                           |
+
 
 ---
 
