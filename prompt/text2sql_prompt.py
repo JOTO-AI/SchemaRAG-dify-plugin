@@ -1,4 +1,4 @@
-def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_prompt: str = None, example_info: str = None) -> str:
+def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_prompt: str = None, example_info: str = None, conversation_history: list = None) -> str:
     """
     构建预定义的system prompt
     
@@ -8,6 +8,7 @@ def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_pro
         question: 用户问题
         custom_prompt: 自定义指令（可选），如果提供则替换默认的Critical Requirements
         example_info: 示例信息（可选），从示例知识库检索的内容
+        conversation_history: 对话历史记录（可选），用于多轮对话上下文
     """
     
     # 构建示例部分
@@ -18,6 +19,12 @@ def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_pro
 {example_info}
 """
     
+    # 构建对话历史部分
+    from prompt.components.context_formatter import ContextFormatter
+    conversation_section = ""
+    if conversation_history and len(conversation_history) > 0:
+        conversation_section = ContextFormatter.format_conversation_history(conversation_history)
+    
     # 如果提供了自定义提示，则使用自定义规则替换默认的Critical Requirements
     if custom_prompt and custom_prompt.strip():
         critical_requirements_section = custom_prompt.strip()
@@ -25,10 +32,11 @@ def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_pro
         system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
 
 【Database Schema】
-{db_schema}{examples_section}
+{db_schema}{examples_section}{conversation_section}
 
 【Task Instructions】
 Analyze the user's question carefully and generate a precise SQL query that answers their question using only the provided schema.
+If the question references previous questions or results, use the conversation history to maintain context.
 
 【Critical Requirements】
 {critical_requirements_section}
@@ -50,10 +58,11 @@ Remember: Generate clean, executable SQL that directly answers the user's questi
         system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
 
 【Database Schema】
-{db_schema}{examples_section}
+{db_schema}{examples_section}{conversation_section}
 
 【Task Instructions】
 Analyze the user's question carefully and generate a precise SQL query that answers their question using only the provided schema.
+If the question references previous questions or results, use the conversation history to maintain context and generate appropriate SQL.
 
 【Critical Requirements】
 1. **Schema Adherence**: Only use tables, columns, and data types that exist in the provided schema
@@ -63,6 +72,7 @@ Analyze the user's question carefully and generate a precise SQL query that answ
 5. **Aggregation**: Apply correct aggregate functions (COUNT, SUM, AVG, MIN, MAX) when needed
 6. **Null Handling**: Consider NULL values in your logic, use IS NULL/IS NOT NULL appropriately
 7. **Case Sensitivity**: Match table and column names exactly as defined in the schema
+8. **Context Awareness**: When the user refers to previous queries or results, use the conversation history to understand the context
 
 【Query Optimization Guidelines】
 - Use indexes wisely (prefer indexed columns in WHERE clauses)
