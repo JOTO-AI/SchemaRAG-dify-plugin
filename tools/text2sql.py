@@ -6,6 +6,7 @@ import logging
 from prompt import text2sql_prompt
 from service.knowledge_service import KnowledgeService
 from service.context import ContextManager
+from service.cache import CacheManager, normalize_query, create_cache_key_from_dict, CacheConfig
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
@@ -43,6 +44,9 @@ class Text2SQLTool(Tool):
         
         # 初始化上下文管理器
         self._context_manager = ContextManager()
+        
+        # 获取SQL缓存管理器
+        self._sql_cache = CacheManager.get_instance("sql_cache")
 
         # 初始化时验证配置
         self._validate_config()
@@ -82,8 +86,18 @@ class Text2SQLTool(Tool):
 
     @classmethod
     def get_cache_size(cls) -> int:
-        """获取当前缓存大小"""
+        """获取当前服务实例缓存大小"""
         return len(cls._knowledge_service_cache)
+    
+    @classmethod
+    def get_cache_stats(cls) -> Dict[str, Any]:
+        """
+        获取所有缓存的统计信息
+        
+        返回:
+            包含所有缓存统计信息的字典
+        """
+        return CacheConfig.get_summary()
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
@@ -102,7 +116,7 @@ class Text2SQLTool(Tool):
                 raise ValueError(params_result)
 
             (dataset_id, llm_model, content, dialect, top_k, retrieval_model, 
-             custom_prompt, example_dataset_id, memory_enabled, memory_window_size, reset_memory) = params_result
+             custom_prompt, example_dataset_id, memory_enabled, memory_window_size, reset_memory, cache_enabled) = params_result
             
             # 获取用户ID用于上下文管理
             user_id = self.runtime.user_id
@@ -153,8 +167,44 @@ class Text2SQLTool(Tool):
                 dialect, schema_info, content, custom_prompt, example_info, conversation_history
             )
             
-            # 步骤5: 调用LLM生成SQL
-            self.logger.info("开始调用LLM生成SQL查询")
+            # 步骤4.5: 检查SQL缓存（如果启用缓存且未重置记忆）
+            cache_key = None
+            if cache_enabled and not reset_memory:
+                # 生成缓存键
+                cache_key = create_cache_key_from_dict(
+                    "sql",
+                    {
+                        "dialect": dialect,
+                        "query": normalize_query(content),
+                        "dataset_id": dataset_id,
+                        "custom_prompt": custom_prompt[:50] if custom_prompt else ""  # 只取前50字符
+                    }
+                )
+                
+                # 尝试从缓存获取
+                cached_sql = self._sql_cache.get(cache_key)
+                if cached_sql:
+                    self.logger.info("SQL缓存命中，直接返回缓存的SQL")
+                    yield self.create_text_message(text=cached_sql)
+                    
+                    # 如果启用了记忆，仍然需要保存对话
+                    if memory_enabled:
+                        self._context_manager.add_conversation(
+                            query=content,
+                            sql=cached_sql,
+                            user_id=user_id,
+                            metadata={
+                                "dialect": dialect,
+                                "dataset_id": dataset_id,
+                                "from_cache": True
+                            }
+                        )
+                        self.logger.debug(f"已保存缓存SQL到上下文，用户: {user_id}")
+                    
+                    return
+            
+            # 步骤5: 缓存未命中，调用LLM生成SQL
+            self.logger.info("SQL缓存未命中，开始调用LLM生成SQL查询")
 
             response = self.session.model.llm.invoke(
                 model_config=llm_model,
@@ -197,6 +247,11 @@ class Text2SQLTool(Tool):
 
             self.logger.info(f"SQL生成完成，响应长度: {total_content_length}")
             
+            # 步骤5.5: 缓存生成的SQL结果（如果启用缓存）
+            if cache_enabled and generated_sql and cache_key:
+                self._sql_cache.set(cache_key, generated_sql, ttl=7200)  # 2小时过期
+                self.logger.debug(f"已缓存生成的SQL，键: {cache_key}")
+            
             # 步骤6: 如果启用了记忆功能，保存对话到上下文
             if memory_enabled and generated_sql:
                 self._context_manager.add_conversation(
@@ -222,7 +277,7 @@ class Text2SQLTool(Tool):
 
     def _validate_and_extract_parameters(
         self, tool_parameters: dict[str, Any]
-    ) -> Union[Tuple[str, Any, str, str, int, str, str, str, bool, int, bool], str]:
+    ) -> Union[Tuple[str, Any, str, str, int, str, str, str, bool, int, bool, bool], str]:
         """验证并提取工具参数，返回参数元组或错误消息"""
         # 验证必要参数
         dataset_id = tool_parameters.get("dataset_id")
@@ -301,6 +356,14 @@ class Text2SQLTool(Tool):
             reset_memory = reset_memory.lower() in ['true', '1', 'yes']
         elif not isinstance(reset_memory, bool):
             reset_memory = False
+        
+        # 获取缓存启用参数
+        cache_enabled = tool_parameters.get("cache_enabled", "true")
+        # 处理字符串类型的布尔值（来自select选项）
+        if isinstance(cache_enabled, str):
+            cache_enabled = cache_enabled.lower() in ['true', '1', 'yes']
+        elif not isinstance(cache_enabled, bool):
+            cache_enabled = True  # 默认启用
 
         return (
             dataset_id.strip(),
@@ -314,4 +377,5 @@ class Text2SQLTool(Tool):
             memory_enabled,
             memory_window_size,
             reset_memory,
+            cache_enabled,
         )

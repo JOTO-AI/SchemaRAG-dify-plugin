@@ -170,9 +170,9 @@ class DataSummaryTool(Tool):
                         content = chunk.delta.message.content
                         has_streamed_content = True
                         total_content_length += len(content)
-                        if total_content_length > 50000:
-                            yield self.create_text_message("警告: 响应内容过长，已截断")
-                            break
+                        # if total_content_length > 50000:
+                        #     yield self.create_text_message("警告: 响应内容过长，已截断")
+                        #     break
                         yield self.create_text_message(text=content)
 
                 if (

@@ -250,6 +250,32 @@ parameters:
       zh_Hans: "例如：true,false"
       pt_BR: "e.g., true,false"
 
+  - name: cache_enabled
+    type: select
+    required: false
+    label:
+      en_US: Enable Cache
+      zh_Hans: 启用缓存
+      pt_BR: Enable Cache
+    human_description:
+      en_US: Whether to enable caching for schema retrieval and SQL generation
+      zh_Hans: 是否启用Schema检索和SQL生成的缓存功能
+      pt_BR: Whether to enable caching for schema retrieval and SQL generation
+    llm_description: Enable or disable the caching feature for improved performance
+    form: form
+    options:
+      - value: "true"
+        label:
+          en_US: Enable
+          zh_Hans: 启用
+          pt_BR: Enable
+      - value: "false"
+        label:
+          en_US: Disable
+          zh_Hans: 禁用
+          pt_BR: Disable
+    default: "true"
+
 extra:
   python:
     source: tools/text2sql.py
