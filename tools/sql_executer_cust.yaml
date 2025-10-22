@@ -1,0 +1,75 @@
+identity:
+  name: sql_executer_customize
+  author: joto
+  label:
+    en_US: Customize SQL Executer 
+    zh_Hans: 自定义SQL执行器
+
+description:
+  human:
+    en_US: Customize database connections and execute SQL queries to retrieve results.
+    zh_Hans: 自定义数据库连接并执行SQL查询并从数据库获取结果。
+  llm: A tool that executes SQL queries against the configured database and returns the results in either JSON or Markdown format.
+
+parameters:
+  - name: database_url
+    type: string
+    required: true
+    label:
+      en_US: Database URL
+      zh_Hans: 数据库URL
+    human_description:
+      en_US: The database connection URL example:mysql://user:password@host:port/dbname db_type can be:postgresql, dameng, mssql, oracle.
+      zh_Hans: 数据库连接URL 例如：mysql://user:password@host:port/dbname db_type 可为：postgresql，dameng，mssql，oracle。
+    llm_description: The connection URL for the database to execute queries against.
+    form: llm
+
+  - name: sql
+    type: string
+    required: true
+    label:
+      en_US: SQL Query
+      zh_Hans: SQL查询
+    human_description:
+      en_US: The SQL query to execute.
+      zh_Hans: 要执行的SQL查询语句。
+    llm_description: The raw SQL query to be executed on the database.
+    form: llm
+
+  - name: output_format
+    type: select
+    required: true
+    label:
+      en_US: Output Format
+      zh_Hans: 输出格式
+    human_description:
+      en_US: The format for the output results.
+      zh_Hans: 输出结果的格式。
+    llm_description: The desired format for the query results, either 'json' or 'md'.
+    form: form
+    options:
+      - value: json
+        label:
+          en_US: JSON
+          zh_Hans: JSON
+      - value: md
+        label:
+          en_US: Markdown
+          zh_Hans: Markdown
+    default: json
+    
+  - name: max_line
+    type: number
+    required: false
+    label:
+      en_US: Max Line
+      zh_Hans: 最大行数
+    human_description:
+      en_US: The maximum number of lines to return.
+      zh_Hans: 要返回的最大行数。防止查询数据过多导致内存问题。
+    llm_description: The maximum number of lines to include in the query results.
+    form: llm
+
+extra:
+  python:
+    source: tools/sql_executer_cust.py

@@ -5,10 +5,17 @@ import httpx
 import concurrent.futures
 from typing import Optional, List, Tuple
 
+from service.cache import cacheable, normalize_query, create_cache_key_from_dict, CacheManager
+
 
 class KnowledgeService:
     """
     知识库服务类 - 负责与Dify知识库API交互，检索相关文档内容
+    
+    已集成缓存功能：
+    - Schema检索结果自动缓存
+    - 缓存键基于查询参数生成
+    - 支持缓存失效和统计
     """
 
     def __init__(self, api_uri: str, api_key: str):
@@ -235,6 +242,22 @@ class KnowledgeService:
         
         return "\\n\\n".join(all_content)
 
+    @cacheable(
+        name="schema_cache",
+        key_prefix="schema",
+        ttl=3600,  # 1小时过期
+        key_generator=lambda self, dataset_id, query, top_k, retrieval_model: 
+            create_cache_key_from_dict(
+                "schema",
+                {
+                    "dataset_id": dataset_id,
+                    "query": normalize_query(query),
+                    "top_k": top_k,
+                    "retrieval_model": retrieval_model
+                }
+            ),
+        condition=lambda result: result and result.strip()  # 只缓存非空结果
+    )
     def retrieve_schema_from_dataset(
         self,
         dataset_id: str,
@@ -244,6 +267,11 @@ class KnowledgeService:
     ) -> str:
         """
         从Dify知识库检索相关的schema信息
+        
+        该方法已启用缓存功能：
+        - 相同参数的查询将直接返回缓存结果
+        - 缓存有效期为1小时
+        - 查询会被规范化以提高缓存命中率
 
         Args:
             dataset_id: 数据集ID

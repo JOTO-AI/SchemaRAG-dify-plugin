@@ -166,6 +166,7 @@ supported_app_types:
 tools:
   - tools/text2sql.yaml
   - tools/sql_executer.yaml
+  - tools/sql_executer_cust.yaml
   - tools/data_summary.yaml
   - tools/llm_plot.yaml
   # - tools/text2data.yaml

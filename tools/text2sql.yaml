@@ -189,6 +189,93 @@ parameters:
       zh_Hans: "例如：examples_dataset_1,examples_dataset_2"
       pt_BR: "e.g., examples_dataset_1,examples_dataset_2"
 
+  - name: memory_enabled
+    type: select
+    required: false
+    label:
+      en_US: Enable Memory
+      zh_Hans: 启用记忆功能
+      pt_BR: Enable Memory
+    human_description:
+      en_US: Whether to enable context memory for multi-turn conversations
+      zh_Hans: 是否启用上下文记忆功能，支持多轮对话
+      pt_BR: Whether to enable context memory for multi-turn conversations
+    llm_description: Enable or disable the conversation memory feature for maintaining context across multiple queries
+    form: form
+    options:
+      - value: "true"
+        label:
+          en_US: Enable
+          zh_Hans: 启用
+          pt_BR: Enable
+      - value: "false"
+        label:
+          en_US: Disable
+          zh_Hans: 禁用
+          pt_BR: Disable
+    default: "false"
+
+  - name: memory_window_size
+    type: number
+    required: false
+    label:
+      en_US: Memory Window Size
+      zh_Hans: 记忆窗口大小
+      pt_BR: Memory Window Size
+    human_description:
+      en_US: Number of previous conversations to remember (1-100)
+      zh_Hans: 记住前几轮对话的数量（1-100）
+      pt_BR: Number of previous conversations to remember (1-100)
+    llm_description: The number of previous conversation turns to include in the context when memory is enabled
+    form: form
+    default: 3
+    min: 1
+    max: 100
+    
+  - name: reset_memory
+    type: string
+    required: false
+    label:
+      en_US: Reset Memory
+      zh_Hans: 重置记忆
+      pt_BR: Reset Memory
+    human_description:
+      en_US: Whether to clear conversation memory and start fresh
+      zh_Hans: 是否清除对话记忆并重新开始
+      pt_BR: Whether to clear conversation memory and start fresh
+    llm_description: If set to true, all previous conversation history will be cleared before processing the current query
+    form: form
+    placeholder:
+      en_US: "e.g., true,false"
+      zh_Hans: "例如：true,false"
+      pt_BR: "e.g., true,false"
+
+  - name: cache_enabled
+    type: select
+    required: false
+    label:
+      en_US: Enable Cache
+      zh_Hans: 启用缓存
+      pt_BR: Enable Cache
+    human_description:
+      en_US: Whether to enable caching for schema retrieval and SQL generation
+      zh_Hans: 是否启用Schema检索和SQL生成的缓存功能
+      pt_BR: Whether to enable caching for schema retrieval and SQL generation
+    llm_description: Enable or disable the caching feature for improved performance
+    form: form
+    options:
+      - value: "true"
+        label:
+          en_US: Enable
+          zh_Hans: 启用
+          pt_BR: Enable
+      - value: "false"
+        label:
+          en_US: Disable
+          zh_Hans: 禁用
+          pt_BR: Disable
+    default: "true"
+
 extra:
   python:
     source: tools/text2sql.py

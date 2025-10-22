@@ -28,16 +28,34 @@ class DatabaseService:
                     database=dbname,
                     cursorclass=pymysql.cursors.DictCursor,
                 )
+            
             elif db_type == "postgresql":
                 conn = psycopg2.connect(
                     host=host, port=port, user=user, password=password, dbname=dbname
                 )
+            
             elif db_type == "dameng":
                 if not DAMENG_AVAILABLE:
                     raise ValueError("DamengDB support requires dmPython package to be installed")
                 # 达梦数据库使用特定的连接字符串格式: user/password@host:port
                 connection_string = f"{user}/{password}@{host}:{port}"
                 conn = dmPython.connect(connection_string)
+            
+            elif db_type == "mssql":
+                import pymssql
+
+                conn = pymssql.connect(
+                    server=host,
+                    port=port,
+                    user=user,
+                    password=password,
+                    database=dbname,
+                )
+            elif db_type == "oracle":
+                import oracledb
+                dsn = oracledb.makedsn(host, port, service_name=dbname)
+                conn = oracledb.connect(user=user, password=password, dsn=dsn)
+
             else:
                 raise ValueError(f"Unsupported database type: {db_type}")
                 # Detect and clean markdown format from SQL query using regex for better fault tolerance
@@ -54,12 +72,6 @@ class DatabaseService:
             if not query:
                 raise ValueError("SQL query cannot be empty.")
 
-            # Security check: only allow SELECT statements
-            # if not query.lower().strip().startswith("select"):
-            #     raise ValueError(
-            #         "Only SELECT queries are allowed for security reasons."
-            #     )
-
             with conn.cursor() as cursor:
                 cursor.execute(query)
                 if cursor.description:
@@ -71,6 +83,7 @@ class DatabaseService:
                     # For dameng, results might need conversion to dict
                     elif db_type == "dameng" and results and not isinstance(results[0], dict):
                         results = [dict(zip(columns, row)) for row in results]
+
                     return results, columns
                 else:
                     # For queries that don't return rows (e.g., INSERT, UPDATE)
