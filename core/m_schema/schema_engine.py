@@ -6,7 +6,7 @@ from sqlalchemy import (
 )
 
 from sqlalchemy.engine import Engine
-from llama_index.core import SQLDatabase
+from core.m_schema.sql_database import SQLDatabase
 from utils import examples_to_str
 from core.m_schema.m_schema import MSchema
 

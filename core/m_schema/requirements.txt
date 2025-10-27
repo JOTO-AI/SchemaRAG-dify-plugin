@@ -1,3 +1,2 @@
-llama-index
 numpy
 sqlalchemy
