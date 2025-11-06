@@ -4,7 +4,6 @@ import sys
 import logging
 from venv import logger
 
-from tools.text2data import Text2DataTool
 
 sys.path.append(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,12 +101,6 @@ class SchemaRAGBuilderProvider(ToolProvider):
         Build schema RAG using the provided credentials
         """
         try:
-            # 获取项目根目录
-            # project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-            # 确保logs目录存在
-            # logs_dir = os.path.join(project_root, "logs")
-            # os.makedirs(logs_dir, exist_ok=True)
 
             # 创建数据库配置
             db_type = credentials.get("db_type")
@@ -179,16 +172,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
             builder = SchemaRAGBuilder(db_config, logger_config, dify_config, include_tables)
 
             try:
-                # 确保output目录存在
-                # output_dir = os.path.join(project_root, "output")
-                # os.makedirs(output_dir, exist_ok=True)
-
-                # 生成数据字典
-                # schema_file_path = os.path.join(
-                #     output_dir, f"{db_config.database}_schema.md"
-                # )
                 schema_content = builder.generate_dictionary()
-                # logging.info(f"📄 生成的Schema内容: {schema_content} ")
 
                 # 记录成功信息
                 table_count = schema_content.count("#") if schema_content else 0
@@ -213,4 +197,4 @@ class SchemaRAGBuilderProvider(ToolProvider):
         """
         Return available tools
         """
-        return [Text2SQLTool, SQLExecuterTool, Text2DataTool]
+        return [Text2SQLTool, SQLExecuterTool]

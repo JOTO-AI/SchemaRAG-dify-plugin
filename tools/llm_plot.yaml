@@ -1,41 +1,51 @@
 identity:
   name: llm_plot
-  author: SchemaRAG Team
+  author: joto
   label:
-    en_US: LLM Smart Chart Generator
-    zh_Hans: LLM 智能图表生成器
+    zh_Hans: LLM 智能绘图工具
+    en_US: LLM Intelligent Plotting Tool
 description:
   human:
-    en_US: Generate charts intelligently based on user questions and data using LLM analysis. Supports bar charts, line charts, pie charts, scatter plots, and histograms.
-    zh_Hans: 基于用户问题和数据，通过 LLM 智能分析生成图表。支持柱状图、折线图、饼图、散点图和直方图。
-  llm: A powerful tool that analyzes user questions and data to automatically generate appropriate charts. It can understand natural language queries and select the best chart type to visualize the data.
-    
+    zh_Hans: 基于自然语言问题和数据自动生成可视化图表
+    en_US: Automatically generate visualization charts based on natural language questions and data
+  llm: Generate data visualization charts using LLM analysis for data understanding and chart type recommendation
 parameters:
   - name: user_question
     type: string
     required: true
     label:
-      en_US: User Question
       zh_Hans: 用户问题
+      en_US: User Question
     human_description:
-      en_US: Describe what kind of chart you want to generate, e.g., "Show sales trends over time" or "Compare market share by company"
-      zh_Hans: 描述您想要生成什么样的图表，例如："显示销售趋势变化"或"比较各公司市场份额"
-    llm_description: Natural language description of the chart requirements from the user
+      zh_Hans: 描述您想要可视化的内容，例如显示销售趋势变化
+      en_US: Describe what you want to visualize, e.g. Show sales trend changes
+    llm_description: The user's natural language description of what they want to visualize
     form: llm
-
+  
+  - name: sql_query
+    type: string
+    required: true
+    label:
+      zh_Hans: SQL查询
+      en_US: SQL Query
+    human_description:
+      zh_Hans: 用于图表推荐的SQL查询语句
+      en_US: SQL query statement for chart recommendation context
+    llm_description: The SQL query providing context for chart type recommendation
+    form: llm
+    
   - name: data
     type: string
     required: true
     label:
-      en_US: Data
       zh_Hans: 数据
+      en_US: Data
     human_description:
-      en_US: The data to be visualized, can be JSON format, CSV text, or structured data
-      zh_Hans: 要可视化的数据，可以是 JSON 格式、CSV 文本或结构化数据
-    llm_description: Data to be visualized in JSON, CSV, or other structured format
-    form: llm
-
-
+      zh_Hans: 要可视化的JSON格式数据
+      en_US: JSON format data to be visualized
+    llm_description: The data to be visualized in JSON format
+    form: form
+    
   - name: llm
     type: model-selector
     scope: llm
@@ -50,20 +60,6 @@ parameters:
       pt_BR: The large language model 
     llm_description: The LLM model 
     form: form
-
-
-  - name: context
-    type: string
-    required: false
-    label:
-      en_US: Additional Context
-      zh_Hans: 额外上下文
-    human_description:
-      en_US: Additional context or requirements for chart generation (optional)
-      zh_Hans: 图表生成的额外上下文或要求（可选）
-    llm_description: Optional additional context to help with chart generation
-    form: llm
-
 
 extra:
   python:

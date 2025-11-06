@@ -1,316 +1,191 @@
-# LLM 智能绘图模块
+# LLM Plot 核心模块
 
-基于 LLM 的智能图表生成功能，提供高可维护的端到端图表生成解决方案。
+这是 LLM Plot 工具的核心模块，采用模块化设计，便于维护和扩展。
 
-## 功能特性
-
-- 🤖 **智能分析**: 基于 LLM 自动分析用户问题和数据，选择最合适的图表类型
-- 📊 **多图表支持**: 支持柱状图、折线图、饼图、散点图、直方图
-- 🔧 **高可维护**: 模块化设计，清晰的接口分离
-- 📝 **统一规范**: 标准化的 JSON 配置格式
-- 🛡️ **降级方案**: 当图表生成失败时，提供表格等降级展示
-- ✅ **配置验证**: 完善的配置验证和错误处理
-
-## 架构设计
-
-### 四层架构
-
-1. **配置层** (`chart_schema.py`): 定义统一的 JSON 配置规范
-2. **绘图层** (`chart_generator.py`): Matplotlib 图表生成引擎
-3. **智能层** (`chart_prompts.py`): LLM Prompt 设计和管理
-4. **控制层** (`chart_controller.py`): 端到端的流程控制
-
-### 模块关系
-
-```
-用户问题 + 数据
-        ↓
-    控制层 (Controller)
-        ↓
-    智能层 (Prompts) → LLM
-        ↓
-    配置层 (Schema) - 验证
-        ↓
-    绘图层 (Generator) → 图表文件
-```
-
-## 快速开始
-
-### 1. 安装依赖
-
-```bash
-pip install matplotlib pydantic
-```
-
-### 2. 基本使用
-
-```python
-from core.llm_plot import initialize_chart_service, generate_smart_chart
-
-# 初始化服务（需要提供 LLM 客户端）
-initialize_chart_service(llm_client=your_llm_client)
-
-# 智能生成图表
-user_question = "显示最近三个月的销售额变化"
-query_data = [
-    {"month": "2025-01", "sales": 120},
-    {"month": "2025-02", "sales": 135}, 
-    {"month": "2025-03", "sales": 98}
-]
-
-result = generate_smart_chart(user_question, query_data)
-
-if result["success"]:
-    print(f"图表已生成: {result['chart_path']}")
-else:
-    print(f"生成失败: {result['error']}")
-```
-
-### 3. 直接使用配置
-
-```python
-from core.llm_plot import generate_chart
-
-# 使用预定义配置
-config = {
-    "chart_type": "bar",
-    "title": "销售额统计",
-    "x_axis": {
-        "label": "月份",
-        "data": ["1月", "2月", "3月"]
-    },
-    "y_axis": {
-        "label": "销售额 (万元)",
-        "data": [120, 135, 98]
-    }
-}
-
-chart_path = generate_chart(config)
-print(f"图表已生成: {chart_path}")
-```
-
-## 配置规范
-
-### 支持的图表类型
-
-| 类型 | 说明 | 适用场景 |
-|------|------|----------|
-| `bar` | 柱状图 | 比较不同类别的数值 |
-| `line` | 折线图 | 显示趋势变化 |
-| `pie` | 饼图 | 显示比例分布 |
-| `scatter` | 散点图 | 显示相关性 |
-| `histogram` | 直方图 | 显示分布情况 |
-
-### JSON 配置格式
-
-#### 柱状图配置
-```json
-{
-  "chart_type": "bar",
-  "title": "图表标题",
-  "x_axis": {
-    "label": "X轴标签",
-    "data": ["类别1", "类别2", "类别3"]
-  },
-  "y_axis": {
-    "label": "Y轴标签", 
-    "data": [10, 20, 15]
-  }
-}
-```
-
-#### 折线图配置
-```json
-{
-  "chart_type": "line",
-  "title": "图表标题",
-  "x_axis": {
-    "label": "X轴标签",
-    "data": ["时间1", "时间2", "时间3"]
-  },
-  "line_series": [
-    {
-      "label": "数据系列1",
-      "data": [10, 15, 12]
-    },
-    {
-      "label": "数据系列2", 
-      "data": [8, 12, 14]
-    }
-  ]
-}
-```
-
-#### 饼图配置
-```json
-{
-  "chart_type": "pie",
-  "title": "图表标题",
-  "pie_data": {
-    "labels": ["标签1", "标签2", "标签3"],
-    "values": [30, 40, 30]
-  }
-}
-```
-
-### 样式配置（可选）
-```json
-{
-  "style": {
-    "figure_size": [10, 6],
-    "dpi": 100,
-    "grid": true,
-    "colors": ["#1f77b4", "#ff7f0e", "#2ca02c"]
-  }
-}
-```
-
-## API 参考
-
-### 核心类
-
-#### `ChartGenerator`
-图表生成器，负责根据配置生成 Matplotlib 图表。
-
-```python
-generator = ChartGenerator(output_dir="output/charts")
-chart_path = generator.generate_chart(config)
-```
-
-#### `LLMChartController`
-LLM 图表控制器，提供端到端的图表生成流程。
-
-```python
-controller = LLMChartController(llm_client=client)
-result = controller.generate_chart_from_data(question, data)
-```
-
-### 工具函数
-
-#### `validate_chart_config(config: Dict) -> ChartConfig`
-验证图表配置的有效性。
-
-#### `get_chart_template(chart_type: str) -> Dict`
-获取指定图表类型的配置模板。
-
-#### `create_chart_prompt(question: str, data: Any) -> str`
-创建 LLM Prompt。
-
-### 服务函数
-
-#### `initialize_chart_service(llm_client, output_dir)`
-初始化全局图表服务。
-
-#### `generate_smart_chart(question: str, data: Any) -> Dict`
-智能生成图表的便捷函数。
-
-## 高级用法
-
-### 自定义 LLM 客户端
-
-LLM 客户端需要实现 `chat` 方法：
-
-```python
-class CustomLLMClient:
-    def chat(self, prompt: str) -> str:
-        # 调用你的 LLM API
-        response = your_llm_api.call(prompt)
-        return response
-
-# 使用自定义客户端
-initialize_chart_service(llm_client=CustomLLMClient())
-```
-
-### 自定义样式
-
-```python
-config = {
-    "chart_type": "bar",
-    "title": "自定义样式图表",
-    "x_axis": {"label": "类别", "data": ["A", "B"]},
-    "y_axis": {"label": "数值", "data": [10, 20]},
-    "style": {
-        "figure_size": [12, 8],
-        "dpi": 150,
-        "colors": ["#FF6B6B", "#4ECDC4"]
-    }
-}
-```
-
-### 错误处理和降级
-
-```python
-result = generate_smart_chart(question, data)
-
-if not result["success"]:
-    print(f"图表生成失败: {result['error']}")
-    
-    # 使用降级数据
-    if result.get("fallback_data"):
-        fallback = result["fallback_data"]
-        if fallback["type"] == "table":
-            # 显示表格
-            print("表格数据:")
-            print(f"表头: {fallback['headers']}")
-            for row in fallback["rows"]:
-                print(f"数据: {row}")
-```
-
-## 运行示例
-
-### 运行完整示例
-```bash
-cd core/llm_plot
-python examples.py
-```
-
-### 运行测试
-```bash
-cd core/llm_plot
-python test_llm_plot.py
-```
-
-## 文件结构
+## 📁 目录结构
 
 ```
 core/llm_plot/
-├── __init__.py              # 模块初始化
-├── chart_schema.py          # 配置规范定义
-├── chart_generator.py       # Matplotlib 绘图引擎
-├── chart_prompts.py         # LLM Prompt 模板
-├── chart_controller.py      # 端到端控制逻辑
-├── examples.py              # 使用示例
-├── test_llm_plot.py         # 单元测试
-└── README.md                # 文档说明
+├── __init__.py           # 模块初始化和导出
+├── README.md             # 本文档
+├── models.py             # 数据模型定义
+├── config.py             # 配置和模板管理
+├── validator.py          # 参数验证
+├── data_processor.py     # 数据处理和转换
+├── llm_analyzer.py       # LLM 分析和推荐
+└── chart_generator.py    # 图表生成
 ```
 
-## 扩展指南
+## 📦 模块说明
 
-### 添加新图表类型
+### 1. models.py - 数据模型
+定义核心数据结构：
+- `ChartRecommendation`: 图表推荐模型，包含图表类型、字段、标题等信息
 
-1. 在 `chart_schema.py` 中添加新类型到 `SUPPORTED_CHART_TYPES`
-2. 在 `chart_generator.py` 中实现生成函数
-3. 在主分发函数中添加路由
-4. 更新配置规范和示例
+### 2. config.py - 配置管理
+提供图表配置和模板：
+- `ChartConfig.BASE_CONFIG`: 基础配置模板
+- `ChartConfig.LINE_CHART_TEMPLATE`: 折线图模板
+- `ChartConfig.HISTOGRAM_CHART_TEMPLATE`: 直方图模板
+- `ChartConfig.PIE_CHART_TEMPLATE`: 饼图模板
+- `ChartConfig.get_chart_template()`: 获取指定类型的模板
+- `ChartConfig.create_chart_config()`: 创建完整的图表配置
 
-### 自定义 Prompt
+#### 图表模板特性
 
-继承 `ChartPromptTemplate` 类：
+**折线图模板**
+- 平滑曲线渲染
+- 可自定义线宽
+- 支持图例和工具提示
+- 适用于时间序列和趋势分析
+
+**直方图模板**
+- 自适应区间数量
+- 淡雅背景色设计
+- 展示数据分布情况
+- 适用于频数统计
+
+**饼图模板**
+- 环形图设计 (innerRadius: 0.5)
+- 右侧图例布局
+- 内部标签显示
+- 统计信息展示
+- 适用于占比和结构分析
+
+### 3. validator.py - 参数验证
+提供参数验证功能：
+- `validate_parameters()`: 验证必需参数
+- `validate_data_format()`: 验证数据格式
+- `validate_chart_type()`: 验证图表类型
+- `validate_field_exists()`: 验证字段存在性
+
+### 4. data_processor.py - 数据处理
+处理和转换数据：
+- `transform_data_for_chart()`: 转换数据为图表格式
+- `clean_data()`: 数据清洗
+- `get_data_summary()`: 获取数据摘要
+
+支持的转换：
+- **折线图**: `[{"time": "...", "value": ...}, ...]`
+- **直方图**: `[value1, value2, ...]`
+- **饼图**: `[{"category": "...", "value": ...}, ...]`
+
+### 5. llm_analyzer.py - LLM 分析
+使用 LLM 分析数据并推荐图表：
+- `analyze()`: 分析用户问题和 SQL 查询
+- `create_recommendation()`: 创建图表推荐
+- 智能推荐最适合的图表类型
+- 提供默认推荐配置
+
+### 6. chart_generator.py - 图表生成
+生成和配置图表：
+- `generate_chart_config()`: 生成图表配置
+- `generate_chart_url()`: 调用 AntV API 生成图表
+- `generate()`: 完整的图表生成流程
+
+## 🎨 使用示例
+
+### 基础使用
 
 ```python
-class CustomPromptTemplate(ChartPromptTemplate):
-    def generate_prompt(self, question, data, context=None):
-        # 自定义 Prompt 逻辑
-        return custom_prompt
+from core.llm_plot import (
+    ParameterValidator,
+    LLMAnalyzer,
+    ChartGenerator,
+)
+
+# 1. 验证参数
+ParameterValidator.validate_parameters(parameters)
+
+# 2. LLM 分析
+analyzer = LLMAnalyzer(session)
+recommendation = analyzer.analyze(user_question, sql_query, llm_model)
+
+# 3. 生成图表
+generator = ChartGenerator()
+chart_url = generator.generate(recommendation, data)
 ```
 
-## 注意事项
+### 自定义配置
 
-1. **字体支持**: 默认配置支持中文字体，如遇显示问题请检查系统字体
-2. **输出目录**: 确保指定的输出目录有写入权限
-3. **内存管理**: 图表生成后会自动关闭 matplotlib 图形，避免内存泄漏
-4. **LLM 响应**: LLM 响应需要是有效的 JSON 格式，建议在 Prompt 中强调
+```python
+from core.llm_plot import ChartConfig
 
-## 许可证
+# 创建自定义折线图配置
+config = ChartConfig.create_chart_config(
+    chart_type="line",
+    data=chart_data,
+    title="销售趋势",
+    x_title="日期",
+    y_title="销售额",
+    style={"lineWidth": 5}
+)
+```
 
-本模块遵循项目的整体许可证。
+### 数据处理
+
+```python
+from core.llm_plot import DataProcessor
+
+processor = DataProcessor()
+
+# 转换数据
+chart_data = processor.transform_data_for_chart(
+    chart_type="pie",
+    data=raw_data,
+    x_field="category",
+    y_field="value"
+)
+
+# 获取数据摘要
+summary = processor.get_data_summary(data)
+print(f"记录数: {summary['record_count']}")
+print(f"字段: {summary['fields']}")
+```
+
+## 🎯 设计优势
+
+1. **模块化设计**: 每个模块职责单一，易于维护和测试
+2. **可扩展性**: 便于添加新的图表类型和功能
+3. **可复用性**: 核心功能可在其他项目中复用
+4. **美观模板**: 预构建的专业图表模板
+5. **类型安全**: 使用 Pydantic 模型进行类型验证
+6. **错误处理**: 完善的异常处理和日志记录
+
+## 🔧 配置说明
+
+### 颜色调色板
+```python
+palette = [
+    "#5B8FF9",  # 蓝色
+    "#61DDAA",  # 绿色
+    "#F6BD16",  # 黄色
+    "#7262fd",  # 紫色
+    "#78D3F8",  # 青色
+    "#9661BC",  # 深紫色
+    "#F6903D",  # 橙色
+    "#008685",  # 青绿色
+    "#F08BB4",  # 粉色
+]
+```
+
+### AntV API 配置
+- **URL**: `https://antv-studio.alipay.com/api/gpt-vis`
+- **超时**: 30 秒
+- **主题**: academy
+- **默认尺寸**: 800x500 (折线图/直方图), 600x400 (饼图)
+
+## 📝 版本信息
+
+- **版本**: 1.0.0
+- **Python**: >= 3.8
+- **依赖**: pydantic, requests, dify_plugin
+
+## 🤝 贡献指南
+
+添加新功能时，请遵循以下原则：
+1. 保持模块职责单一
+2. 添加完整的文档字符串
+3. 编写单元测试
+4. 保持代码风格一致
+5. 更新此 README 文档
