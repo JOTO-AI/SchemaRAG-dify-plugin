@@ -137,8 +137,8 @@ class ChartGenerator:
             title=recommendation.title,
             innerRadius=0.5,
             style=ChartConfig.BASE_CONFIG["style"],
-            width=600,
-            height=400
+            width=800,
+            height=600
         )
     
     def generate_chart_url(self, config: Dict[str, Any]) -> str:

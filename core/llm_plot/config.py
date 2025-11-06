@@ -15,8 +15,8 @@ class ChartConfig:
     BASE_CONFIG: Dict[str, Any] = {
         "source": "dify-plugin-visualization",
         "theme": "academy",
-        "width": 1000,
-        "height": 1000,
+        "width": 800,
+        "height": 600,
         "style": {
             "texture": "default",
             "backgroundColor": "#ffffff",
@@ -75,8 +75,8 @@ class ChartConfig:
         "type": "pie",
         "title": "饼图",
         "innerRadius": 0.5,  # 环形图
-        "width": 600,
-        "height": 400,
+        "width": 800,
+        "height": 600,
         "legend": {
             "position": "right"
         },
