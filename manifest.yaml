@@ -1,4 +1,4 @@
-version: 0.1.1
+version: 0.1.2
 type: plugin
 author: joto
 name: schemarag
@@ -35,7 +35,7 @@ plugins:
   tools:
     - provider/provider.yaml
 meta:
-  version: 0.1.1
+  version: 0.1.2
   arch:
     - amd64
     - arm64
