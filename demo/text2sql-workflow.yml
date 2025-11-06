@@ -1,0 +1,1135 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: text2sql-workflow
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: package
+  value:
+    plugin_unique_identifier: joto/schemarag:0.1.2@a4f63e641022c3b3078ee6e6ac49695af2ff6a4ed23bb193b3352c5583c87cb2
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1762430175866-source-1762430191059-target
+      source: '1762430175866'
+      sourceHandle: source
+      target: '1762430191059'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: 1762430191059-source-1762430205393-target
+      source: '1762430191059'
+      sourceHandle: source
+      target: '1762430205393'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: 1762430205393-source-1762430227006-target
+      source: '1762430205393'
+      sourceHandle: source
+      target: '1762430227006'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: answer
+      id: 1762430238923-source-answer-target
+      source: '1762430238923'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: 1762430205393-source-1762430238923-target
+      source: '1762430205393'
+      sourceHandle: source
+      target: '1762430238923'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: answer
+      id: 1762430227006-source-answer-target
+      source: '1762430227006'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 52
+      id: '1762430175866'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#1762430191059.text#}}
+
+          {{#1762430227006.text#}}
+
+          {{#1762430238923.text#}}'
+        desc: ''
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 141
+      id: answer
+      position:
+        x: 1484
+        y: 267
+      positionAbsolute:
+        x: 1484
+        y: 267
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The ID of the Dify dataset containing the database schema. Supports
+              multiple datasets separated by commas for comprehensive schema coverage.
+            ja_JP: The ID of the Dify dataset containing the database schema. Supports
+              multiple datasets separated by commas for comprehensive schema coverage.
+            pt_BR: The ID of the Dify dataset containing the database schema. Supports
+              multiple datasets separated by commas for comprehensive schema coverage.
+            zh_Hans: 包含数据库架构的Dify知识库ID。支持逗号分隔的多个知识库ID以获得更全面的架构覆盖。
+          label:
+            en_US: Dataset ID
+            ja_JP: Dataset ID
+            pt_BR: Dataset ID
+            zh_Hans: 知识库ID
+          llm_description: The dataset ID from Dify knowledge base containing database
+            schema information. Can accept multiple dataset IDs separated by commas
+            (e.g., "dataset1,dataset2,dataset3") for retrieving from multiple knowledge
+            bases concurrently.
+          max: null
+          min: null
+          name: dataset_id
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: form
+          human_description:
+            en_US: The large language model to use for SQL generation
+            ja_JP: The large language model to use for SQL generation
+            pt_BR: The large language model to use for SQL generation
+            zh_Hans: 用于生成SQL的大语言模型
+          label:
+            en_US: LLM Model
+            ja_JP: LLM Model
+            pt_BR: LLM Model
+            zh_Hans: 大语言模型
+          llm_description: The LLM model to use for generating SQL queries
+          max: null
+          min: null
+          name: llm
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: llm
+          template: null
+          type: model-selector
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The natural language question to convert to SQL
+            ja_JP: The natural language question to convert to SQL
+            pt_BR: The natural language question to convert to SQL
+            zh_Hans: 要转换为SQL的自然语言问题
+          label:
+            en_US: Question
+            ja_JP: Question
+            pt_BR: Question
+            zh_Hans: 问题
+          llm_description: The natural language question that needs to be converted
+            to SQL query
+          max: null
+          min: null
+          name: content
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: mysql
+          form: form
+          human_description:
+            en_US: The SQL dialect to use for query generation
+            ja_JP: The SQL dialect to use for query generation
+            pt_BR: The SQL dialect to use for query generation
+            zh_Hans: 用于查询生成的SQL方言
+          label:
+            en_US: SQL Dialect
+            ja_JP: SQL Dialect
+            pt_BR: SQL Dialect
+            zh_Hans: SQL方言
+          llm_description: The SQL dialect (MySQL or PostgreSQL) to use for generating
+            the query
+          max: null
+          min: null
+          name: dialect
+          options:
+          - icon: ''
+            label:
+              en_US: MySQL
+              ja_JP: MySQL
+              pt_BR: MySQL
+              zh_Hans: MySQL
+            value: mysql
+          - icon: ''
+            label:
+              en_US: PostgreSQL
+              ja_JP: PostgreSQL
+              pt_BR: PostgreSQL
+              zh_Hans: PostgreSQL
+            value: postgresql
+          - icon: ''
+            label:
+              en_US: Microsoft SQL Server
+              ja_JP: Microsoft SQL Server
+              pt_BR: Microsoft SQL Server
+              zh_Hans: Microsoft SQL Server
+            value: mssql
+          - icon: ''
+            label:
+              en_US: Oracle
+              ja_JP: Oracle
+              pt_BR: Oracle
+              zh_Hans: Oracle
+            value: oracle
+          - icon: ''
+            label:
+              en_US: Dameng
+              ja_JP: Dameng
+              pt_BR: Dameng
+              zh_Hans: 达梦数据库
+            value: dameng
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: select
+        - auto_generate: null
+          default: 5
+          form: form
+          human_description:
+            en_US: Number of top results to retrieve from knowledge base
+            ja_JP: Number of top results to retrieve from knowledge base
+            pt_BR: Number of top results to retrieve from knowledge base
+            zh_Hans: 从知识库检索的结果数量
+          label:
+            en_US: Top K Results
+            ja_JP: Top K Results
+            pt_BR: Top K Results
+            zh_Hans: 检索结果数量
+          llm_description: The number of top results to retrieve from the knowledge
+            base for schema information
+          max: 20
+          min: 1
+          name: top_k
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: semantic_search
+          form: form
+          human_description:
+            en_US: The retrieval method to use for searching the knowledge base
+            ja_JP: The retrieval method to use for searching the knowledge base
+            pt_BR: The retrieval method to use for searching the knowledge base
+            zh_Hans: 用于搜索知识库的检索方法
+          label:
+            en_US: Retrieval Method
+            ja_JP: Retrieval Method
+            pt_BR: Retrieval Method
+            zh_Hans: 检索方法
+          llm_description: The retrieval method to use for searching relevant schema
+            information
+          max: null
+          min: null
+          name: retrieval_model
+          options:
+          - icon: ''
+            label:
+              en_US: Keyword Search
+              ja_JP: Keyword Search
+              pt_BR: Keyword Search
+              zh_Hans: 关键字检索
+            value: keyword_search
+          - icon: ''
+            label:
+              en_US: Semantic Search
+              ja_JP: Semantic Search
+              pt_BR: Semantic Search
+              zh_Hans: 语义检索
+            value: semantic_search
+          - icon: ''
+            label:
+              en_US: Full Text Search
+              ja_JP: Full Text Search
+              pt_BR: Full Text Search
+              zh_Hans: 全文检索
+            value: full_text_search
+          - icon: ''
+            label:
+              en_US: Hybrid Search
+              ja_JP: Hybrid Search
+              pt_BR: Hybrid Search
+              zh_Hans: 混合检索
+            value: hybrid_search
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: select
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Custom instructions to enhance SQL generation quality and targeting
+            ja_JP: Custom instructions to enhance SQL generation quality and targeting
+            pt_BR: Custom instructions to enhance SQL generation quality and targeting
+            zh_Hans: 自定义指令以增强SQL生成质量和针对性
+          label:
+            en_US: Custom Instructions
+            ja_JP: Custom Instructions
+            pt_BR: Custom Instructions
+            zh_Hans: 自定义指令
+          llm_description: Custom instructions that will be added to the system prompt
+            to improve SQL generation results
+          max: null
+          min: null
+          name: custom_prompt
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The ID of the Dify dataset containing SQL examples. Supports multiple
+              datasets separated by commas for comprehensive example coverage.
+            ja_JP: The ID of the Dify dataset containing SQL examples. Supports multiple
+              datasets separated by commas for comprehensive example coverage.
+            pt_BR: The ID of the Dify dataset containing SQL examples. Supports multiple
+              datasets separated by commas for comprehensive example coverage.
+            zh_Hans: 包含SQL示例的Dify知识库ID。支持逗号分隔的多个知识库ID以获得更全面的示例覆盖。
+          label:
+            en_US: Example Dataset ID
+            ja_JP: Example Dataset ID
+            pt_BR: Example Dataset ID
+            zh_Hans: 示例知识库ID
+          llm_description: Optional dataset ID from Dify knowledge base containing
+            SQL examples that will be retrieved and added to the prompt to improve
+            SQL generation accuracy. Can accept multiple dataset IDs separated by
+            commas.
+          max: null
+          min: null
+          name: example_dataset_id
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: 'false'
+          form: form
+          human_description:
+            en_US: Whether to enable context memory for multi-turn conversations
+            ja_JP: Whether to enable context memory for multi-turn conversations
+            pt_BR: Whether to enable context memory for multi-turn conversations
+            zh_Hans: 是否启用上下文记忆功能，支持多轮对话
+          label:
+            en_US: Enable Memory
+            ja_JP: Enable Memory
+            pt_BR: Enable Memory
+            zh_Hans: 启用记忆功能
+          llm_description: Enable or disable the conversation memory feature for maintaining
+            context across multiple queries
+          max: null
+          min: null
+          name: memory_enabled
+          options:
+          - icon: ''
+            label:
+              en_US: Enable
+              ja_JP: Enable
+              pt_BR: Enable
+              zh_Hans: 启用
+            value: 'true'
+          - icon: ''
+            label:
+              en_US: Disable
+              ja_JP: Disable
+              pt_BR: Disable
+              zh_Hans: 禁用
+            value: 'false'
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: select
+        - auto_generate: null
+          default: 3
+          form: form
+          human_description:
+            en_US: Number of previous conversations to remember (1-100)
+            ja_JP: Number of previous conversations to remember (1-100)
+            pt_BR: Number of previous conversations to remember (1-100)
+            zh_Hans: 记住前几轮对话的数量（1-100）
+          label:
+            en_US: Memory Window Size
+            ja_JP: Memory Window Size
+            pt_BR: Memory Window Size
+            zh_Hans: 记忆窗口大小
+          llm_description: The number of previous conversation turns to include in
+            the context when memory is enabled
+          max: 100
+          min: 1
+          name: memory_window_size
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: null
+          form: form
+          human_description:
+            en_US: Whether to clear conversation memory and start fresh
+            ja_JP: Whether to clear conversation memory and start fresh
+            pt_BR: Whether to clear conversation memory and start fresh
+            zh_Hans: 是否清除对话记忆并重新开始
+          label:
+            en_US: Reset Memory
+            ja_JP: Reset Memory
+            pt_BR: Reset Memory
+            zh_Hans: 重置记忆
+          llm_description: If set to true, all previous conversation history will
+            be cleared before processing the current query
+          max: null
+          min: null
+          name: reset_memory
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: 'true'
+          form: form
+          human_description:
+            en_US: Whether to enable caching for schema retrieval and SQL generation
+            ja_JP: Whether to enable caching for schema retrieval and SQL generation
+            pt_BR: Whether to enable caching for schema retrieval and SQL generation
+            zh_Hans: 是否启用Schema检索和SQL生成的缓存功能
+          label:
+            en_US: Enable Cache
+            ja_JP: Enable Cache
+            pt_BR: Enable Cache
+            zh_Hans: 启用缓存
+          llm_description: Enable or disable the caching feature for improved performance
+          max: null
+          min: null
+          name: cache_enabled
+          options:
+          - icon: ''
+            label:
+              en_US: Enable
+              ja_JP: Enable
+              pt_BR: Enable
+              zh_Hans: 启用
+            value: 'true'
+          - icon: ''
+            label:
+              en_US: Disable
+              ja_JP: Disable
+              pt_BR: Disable
+              zh_Hans: 禁用
+            value: 'false'
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: select
+        params:
+          cache_enabled: ''
+          content: ''
+          custom_prompt: ''
+          dataset_id: ''
+          dialect: ''
+          example_dataset_id: ''
+          llm: ''
+          memory_enabled: ''
+          memory_window_size: ''
+          reset_memory: ''
+          retrieval_model: ''
+          top_k: ''
+        provider_id: joto/schemarag/schemarag
+        provider_name: joto/schemarag/schemarag
+        provider_type: builtin
+        selected: false
+        title: 文本转SQL
+        tool_configurations:
+          cache_enabled:
+            type: constant
+            value: 'true'
+          dialect:
+            type: constant
+            value: mysql
+          llm:
+            type: constant
+            value:
+              completion_params: {}
+              mode: chat
+              model: gpt-4.1
+              model_type: llm
+              provider: langgenius/openai_api_compatible/openai_api_compatible
+          memory_enabled:
+            type: constant
+            value: 'false'
+          memory_window_size:
+            type: constant
+            value: 3
+          reset_memory:
+            type: mixed
+            value: null
+          retrieval_model:
+            type: constant
+            value: semantic_search
+          top_k:
+            type: constant
+            value: 5
+        tool_description: 使用数据库架构知识库将自然语言问题转换为SQL查询
+        tool_label: 文本转SQL
+        tool_name: text2sql
+        tool_node_version: '2'
+        tool_parameters:
+          content:
+            type: mixed
+            value: '{{#sys.query#}}'
+          custom_prompt:
+            type: mixed
+            value: null
+          dataset_id:
+            type: mixed
+            value: f3dedbf9-36a4-4821-a307-6747e4822581
+          example_dataset_id:
+            type: mixed
+            value: null
+        type: tool
+      height: 270
+      id: '1762430191059'
+      position:
+        x: 382
+        y: 282
+      positionAbsolute:
+        x: 382
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The SQL query to execute.
+            ja_JP: The SQL query to execute.
+            pt_BR: The SQL query to execute.
+            zh_Hans: 要执行的SQL查询语句。
+          label:
+            en_US: SQL Query
+            ja_JP: SQL Query
+            pt_BR: SQL Query
+            zh_Hans: SQL查询
+          llm_description: The raw SQL query to be executed on the database.
+          max: null
+          min: null
+          name: sql
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: json
+          form: form
+          human_description:
+            en_US: The format for the output results.
+            ja_JP: The format for the output results.
+            pt_BR: The format for the output results.
+            zh_Hans: 输出结果的格式。
+          label:
+            en_US: Output Format
+            ja_JP: Output Format
+            pt_BR: Output Format
+            zh_Hans: 输出格式
+          llm_description: The desired format for the query results, either 'json'
+            or 'md'.
+          max: null
+          min: null
+          name: output_format
+          options:
+          - icon: ''
+            label:
+              en_US: JSON
+              ja_JP: JSON
+              pt_BR: JSON
+              zh_Hans: JSON
+            value: json
+          - icon: ''
+            label:
+              en_US: Markdown
+              ja_JP: Markdown
+              pt_BR: Markdown
+              zh_Hans: Markdown
+            value: md
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: select
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The maximum number of lines to return.
+            ja_JP: The maximum number of lines to return.
+            pt_BR: The maximum number of lines to return.
+            zh_Hans: 要返回的最大行数。防止查询数据过多导致内存问题。
+          label:
+            en_US: Max Line
+            ja_JP: Max Line
+            pt_BR: Max Line
+            zh_Hans: 最大行数
+          llm_description: The maximum number of lines to include in the query results.
+          max: null
+          min: null
+          name: max_line
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        params:
+          max_line: ''
+          output_format: ''
+          sql: ''
+        provider_id: joto/schemarag/schemarag
+        provider_name: joto/schemarag/schemarag
+        provider_type: builtin
+        selected: false
+        title: SQL执行器
+        tool_configurations:
+          output_format:
+            type: constant
+            value: json
+        tool_description: 执行SQL查询并从数据库获取结果。
+        tool_label: SQL执行器
+        tool_name: sql_executer
+        tool_node_version: '2'
+        tool_parameters:
+          max_line:
+            type: constant
+            value: 100
+          sql:
+            type: mixed
+            value: '{{#1762430191059.text#}}'
+        type: tool
+      height: 88
+      id: '1762430205393'
+      position:
+        x: 684
+        y: 282
+      positionAbsolute:
+        x: 684
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The data content to be analyzed and summarized
+            ja_JP: The data content to be analyzed and summarized
+            pt_BR: The data content to be analyzed and summarized
+            zh_Hans: 需要分析和总结的数据内容
+          label:
+            en_US: Data Content
+            ja_JP: Data Content
+            pt_BR: Data Content
+            zh_Hans: 数据内容
+          llm_description: The raw data content that needs to be analyzed and summarized
+          max: null
+          min: null
+          name: data_content
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: form
+          human_description:
+            en_US: The large language model to use for data analysis and summarization
+            ja_JP: The large language model to use for data analysis and summarization
+            pt_BR: The large language model to use for data analysis and summarization
+            zh_Hans: 用于数据分析和总结的大语言模型
+          label:
+            en_US: LLM Model
+            ja_JP: LLM Model
+            pt_BR: LLM Model
+            zh_Hans: 大语言模型
+          llm_description: The LLM model to use for generating data summaries and
+            insights
+          max: null
+          min: null
+          name: llm
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: llm
+          template: null
+          type: model-selector
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Specific question or focus area for the data analysis
+            ja_JP: Specific question or focus area for the data analysis
+            pt_BR: Specific question or focus area for the data analysis
+            zh_Hans: 数据分析的具体问题或关注领域（通常是sys.query）
+          label:
+            en_US: Analysis Query
+            ja_JP: Analysis Query
+            pt_BR: Analysis Query
+            zh_Hans: 分析查询
+          llm_description: The specific question or analysis focus to guide data summarization
+          max: null
+          min: null
+          name: query
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Optional custom rules or guidelines for data analysis
+            ja_JP: Optional custom rules or guidelines for data analysis
+            pt_BR: Optional custom rules or guidelines for data analysis
+            zh_Hans: 可选的数据分析自定义规则或指导原则
+          label:
+            en_US: Custom Rules
+            ja_JP: Custom Rules
+            pt_BR: Custom Rules
+            zh_Hans: 自定义规则
+          llm_description: Additional custom rules or specific requirements for the
+            data analysis and summarization process
+          max: null
+          min: null
+          name: custom_rules
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Optional custom prompt for LLM, supports {{data}} and {{query}}
+              placeholders
+            ja_JP: Optional custom prompt for LLM, supports {{data}} and {{query}}
+              placeholders
+            pt_BR: Optional custom prompt for LLM, supports {{data}} and {{query}}
+              placeholders
+            zh_Hans: 可选的自定义LLM分析指令，支持{{data}}和{{query}}占位符
+          label:
+            en_US: Custom Prompt
+            ja_JP: Custom Prompt
+            pt_BR: Custom Prompt
+            zh_Hans: 自定义Prompt
+          llm_description: User-defined prompt for LLM, {{data}} will be replaced
+            by data_content, {{query}} by query
+          max: null
+          min: null
+          name: user_prompt
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        params:
+          custom_rules: ''
+          data_content: ''
+          llm: ''
+          query: ''
+          user_prompt: ''
+        provider_id: joto/schemarag/schemarag
+        provider_name: joto/schemarag/schemarag
+        provider_type: builtin
+        selected: false
+        title: 数据总结
+        tool_configurations:
+          llm:
+            type: constant
+            value:
+              completion_params: {}
+              mode: chat
+              model: gpt-4.1
+              model_type: llm
+              provider: langgenius/openai_api_compatible/openai_api_compatible
+        tool_description: 使用可自定义规则分析和总结数据内容，提供洞察
+        tool_label: 数据总结
+        tool_name: data_summary
+        tool_node_version: '2'
+        tool_parameters:
+          custom_rules:
+            type: mixed
+            value: null
+          data_content:
+            type: mixed
+            value: '{{#1762430205393.text#}}'
+          query:
+            type: mixed
+            value: '{{#sys.query#}}'
+          user_prompt:
+            type: mixed
+            value: null
+        type: tool
+      height: 88
+      id: '1762430227006'
+      position:
+        x: 1010
+        y: 215
+      positionAbsolute:
+        x: 1010
+        y: 215
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Describe what kind of chart you want to generate, e.g., "Show sales
+              trends over time" or "Compare market share by company"
+            ja_JP: Describe what kind of chart you want to generate, e.g., "Show sales
+              trends over time" or "Compare market share by company"
+            pt_BR: Describe what kind of chart you want to generate, e.g., "Show sales
+              trends over time" or "Compare market share by company"
+            zh_Hans: 描述您想要生成什么样的图表，例如："显示销售趋势变化"或"比较各公司市场份额"
+          label:
+            en_US: User Question
+            ja_JP: User Question
+            pt_BR: User Question
+            zh_Hans: 用户问题
+          llm_description: Natural language description of the chart requirements
+            from the user
+          max: null
+          min: null
+          name: user_question
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The data to be visualized, can be JSON format, CSV text, or structured
+              data
+            ja_JP: The data to be visualized, can be JSON format, CSV text, or structured
+              data
+            pt_BR: The data to be visualized, can be JSON format, CSV text, or structured
+              data
+            zh_Hans: 要可视化的数据，可以是 JSON 格式、CSV 文本或结构化数据
+          label:
+            en_US: Data
+            ja_JP: Data
+            pt_BR: Data
+            zh_Hans: 数据
+          llm_description: Data to be visualized in JSON, CSV, or other structured
+            format
+          max: null
+          min: null
+          name: data
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: form
+          human_description:
+            en_US: The large language model
+            ja_JP: The large language model
+            pt_BR: The large language model
+            zh_Hans: 大语言模型
+          label:
+            en_US: LLM Model
+            ja_JP: LLM Model
+            pt_BR: LLM Model
+            zh_Hans: 大语言模型
+          llm_description: The LLM model
+          max: null
+          min: null
+          name: llm
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: llm
+          template: null
+          type: model-selector
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Additional context or requirements for chart generation (optional)
+            ja_JP: Additional context or requirements for chart generation (optional)
+            pt_BR: Additional context or requirements for chart generation (optional)
+            zh_Hans: 图表生成的额外上下文或要求（可选）
+          label:
+            en_US: Additional Context
+            ja_JP: Additional Context
+            pt_BR: Additional Context
+            zh_Hans: 额外上下文
+          llm_description: Optional additional context to help with chart generation
+          max: null
+          min: null
+          name: context
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        params:
+          context: ''
+          data: ''
+          llm: ''
+          user_question: ''
+        provider_id: joto/schemarag/schemarag
+        provider_name: joto/schemarag/schemarag
+        provider_type: builtin
+        selected: false
+        title: LLM 智能图表生成器
+        tool_configurations:
+          data:
+            type: mixed
+            value: '{{#1762430205393.text#}}'
+          llm:
+            type: constant
+            value:
+              completion_params: {}
+              mode: chat
+              model: gpt-4.1
+              model_type: llm
+              provider: langgenius/openai_api_compatible/openai_api_compatible
+        tool_description: 基于用户问题和数据，通过 LLM 智能分析生成图表。支持柱状图、折线图、饼图、散点图和直方图。
+        tool_label: LLM 智能图表生成器
+        tool_name: llm_plot
+        tool_node_version: '2'
+        tool_parameters:
+          context:
+            type: mixed
+            value: null
+          data:
+            type: mixed
+            value: '{{#1762430205393.text#}}'
+          sql_query:
+            type: mixed
+            value: '{{#1762430191059.text#}}'
+          user_question:
+            type: mixed
+            value: '{{#sys.query#}}'
+        type: tool
+      height: 114
+      id: '1762430238923'
+      position:
+        x: 1010
+        y: 371
+      positionAbsolute:
+        x: 1010
+        y: 371
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -828
+      y: -22
+      zoom: 1

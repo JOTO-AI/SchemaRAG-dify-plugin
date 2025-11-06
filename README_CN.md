@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.1.1  
+**版本:** 0.1.2  
 **类型:** 工具
 **仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -16,14 +16,18 @@
 
 SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够自动分析数据库结构、构建知识库并实现自然语言转SQL查询。该插件提供了完整的数据库schema分析和智能查询解决方案，开箱即用。
 
+示例工作流[下载](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/demo/text2sql-workflow.yml)
+
 ---
 
 ## ✨ 核心功能
 
 - **多数据库支持**: MySQL, PostgreSQL, MSSQL, Oracle, 达梦自动适配语法差异
-- **架构自动分析**: 一键生成数据字典，结构可视化
+- **schema自动分析**: 一键生成数据字典，结构可视化
 - **知识库上传**: 自动上传到 Dify，支持增量更新
 - **自然语言转SQL**: 开箱即用，支持复杂查询
+- **AI 数据分析**：分析查询数据，支持自定义规则
+- **数据可视化**：提供可视化工具，llm推荐图表和字段
 - **安全机制**: 仅限SELECT，支持字段白名单，最低权限原则
 - **灵活支持**: 兼容主流大模型
 
@@ -162,11 +166,11 @@ print(result)
 | max_line | int | 否 | 查询到的最大行数（默认1000行）|
 
 数据库连接url示例：
-mysql：mysql://user:password@host:port/dbname
-postgresql: postgresql://user:password@host:port/dbname
-dameng: dameng://user:password@host:port/dbname
-mssql: mssql://user:password@host:port/dbname
-oracle: oracle://user:password@host:port/dbname
+- mysql：mysql://user:password@host:port/dbname
+- postgresql: postgresql://user:password@host:port/dbname
+- dameng: dameng://user:password@host:port/dbname
+- mssql: mssql://user:password@host:port/dbname
+- oracle: oracle://user:password@host:port/dbname
 
 ### 4. text2data 工具（删除）
 
@@ -197,12 +201,12 @@ oracle: oracle://user:password@host:port/dbname
 
 ### 6. llm_chart_generator 工具
 
-**LLM 智能绘图模块** - 基于大语言模型的智能图表生成功能，提供高可维护的端到端图表解决方案
+**LLM 智能绘图模块** - 基于大语言模型推荐图标类型和字段，使用[antv](https://github.com/antvis/)渲染图表功能，提供高可维护的端到端图表解决方案
 
 #### 功能特性
 
 - **智能分析**: 自动分析用户问题和数据，智能选择最合适的图表类型
-- **多图表支持**: 支持柱状图、折线图、饼图、散点图、直方图等主流图表
+- **多图表支持**: 支持折线图、饼图、直方图等主流图表
 - **高可维护性**: 模块化设计，接口清晰，易于扩展和维护
 - **统一规范**: 图表配置采用标准化 JSON 格式，便于集成和解析
 - **降级方案**: 图表生成失败时自动降级为表格等展示方式
@@ -215,7 +219,7 @@ oracle: oracle://user:password@host:port/dbname
 | user_question  | string         | 是   | 用户问题，描述需要生成的图表类型和需求（如销售趋势、市场份额）|
 | data           | string         | 是   | 用于可视化的数据，支持 JSON、CSV 或结构化数据                |
 | llm            | model-selector | 是   | 用于分析和生成图表的大语言模型                               |
-| context        | string         | 否   | 图表生成的额外上下文或要求（可选）                           |
+| sql_query        | string         | 是   | 查询的sql语句，用于推荐图表和字段                           |
 
 
 ---

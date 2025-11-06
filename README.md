@@ -1,10 +1,10 @@
 # SchemaRAG Database Schema RAG Plugin
 
-[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **Author:** joto  
-**Version:** 0.1.1  
+**Version:** 0.1.2  
 **Type:** tool  
 **Repository:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -18,6 +18,8 @@
 
 SchemaRAG is a database schema RAG plugin designed specifically for the Dify platform. It can automatically analyze database structures, build knowledge bases, and implement natural language to SQL queries. This plugin provides a complete database schema analysis and intelligent query solution, ready to use out of the box.
 
+Example workflow [download](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/demo/text2sql-workflow.yml)
+
 ---
 
 ## ✨ Core Features
@@ -26,6 +28,8 @@ SchemaRAG is a database schema RAG plugin designed specifically for the Dify pla
 - **Schema Auto-Analysis**: One-click data dictionary generation, structure visualization
 - **Knowledge Base Upload**: Automatic upload to Dify, supports incremental updates
 - **Natural Language to SQL**: Ready to use out of the box, supports complex queries
+- **AI Data Analysis**: Analyze query data, supports custom rules
+- **Data Visualization**: Provides visualization tools, LLM recommends charts and fields
 - **Security Mechanism**: SELECT-only access, supports field whitelist, minimum privilege principle
 - **Flexible Support**: Compatible with mainstream large language models
 
@@ -164,11 +168,11 @@ print(result)
 | max_line | int | No | Maximum number of query rows (default 1000) |
 
 Database connection URL examples:
-mysql: mysql://user:password@host:port/dbname
-postgresql: postgresql://user:password@host:port/dbname
-dameng: dameng://user:password@host:port/dbname
-mssql: mssql://user:password@host:port/dbname
-oracle: oracle://user:password@host:port/dbname
+- mysql: mysql://user:password@host:port/dbname
+- postgresql: postgresql://user:password@host:port/dbname
+- DM: dameng://user:password@host:port/dbname
+- mssql: mssql://user:password@host:port/dbname
+- oracle: oracle://user:password@host:port/dbname
 
 ### 4. text2data Tool (Removed)
 
@@ -199,7 +203,7 @@ Encapsulates the above two tools, ready to use out of the box, with added LLM su
 
 ### 6. llm_chart_generator Tool
 
-**LLM Intelligent Chart Generation Module** - Intelligent chart generation functionality based on large language models, providing highly maintainable end-to-end chart solutions
+**LLM Intelligent Chart Generation Module** - Based on large language models to recommend chart types and fields, using [antv](https://github.com/antvis/) to render charts, providing highly maintainable end-to-end chart solutions
 
 #### Features
 
@@ -217,7 +221,7 @@ Encapsulates the above two tools, ready to use out of the box, with added LLM su
 | user_question | string | Yes | User question describing the chart type and requirements (e.g., sales trends, market share) |
 | data | string | Yes | Data for visualization, supports JSON, CSV, or structured data |
 | llm | model-selector | Yes | Large language model for analysis and chart generation |
-| context | string | No | Additional context or requirements for chart generation (optional) |
+| sql_query | string | Yes | SQL query statement used to recommend charts and fields |
 
 ---
 
