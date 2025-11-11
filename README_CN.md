@@ -16,7 +16,7 @@
 
 SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够自动分析数据库结构、构建知识库并实现自然语言转SQL查询。该插件提供了完整的数据库schema分析和智能查询解决方案，开箱即用。
 
-示例工作流[下载](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/demo/text2sql-workflow.yml)
+示例工作流[下载](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/blob/main/demo/text2sql-workflow.yml)
 
 ---
 
