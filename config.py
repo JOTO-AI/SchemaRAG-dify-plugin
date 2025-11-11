@@ -5,6 +5,7 @@
 import os
 from dataclasses import dataclass
 from typing import Optional
+from urllib.parse import quote_plus
 
 # 尝试导入dotenv，如果失败则忽略。在生产环境中，通常使用环境变量。
 try:
@@ -41,18 +42,23 @@ class DatabaseConfig:
         """获取数据库连接字符串"""
         if self.type == "sqlite":
             return f"sqlite:///{self.database}"
-        elif self.type == "postgresql":
-            return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+        
+        # 对用户名和密码进行 URL 编码，处理特殊字符（如 @, #, $ 等）
+        encoded_user = quote_plus(self.user)
+        encoded_password = quote_plus(self.password)
+        
+        if self.type == "postgresql":
+            return f"postgresql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "mysql":
-            return f"mysql+pymysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+            return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "mssql":
-            return f"mssql+pymssql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+            return f"mssql+pymssql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "oracle":
-            return f"oracle+oracledb://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+            return f"oracle+oracledb://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "dameng":
-            return f"dm+dmPython://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+            return f"dm+dmPython://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "doris":
-            return f"doris+mysql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
+            return f"doris+mysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         else:
             raise ValueError(f"Unsupported database type: {self.type}")
 

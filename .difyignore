@@ -181,3 +181,4 @@ Thumbs.db
 test/
 docs/
 output/
+*.difypkg

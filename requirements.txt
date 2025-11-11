@@ -13,6 +13,5 @@ dmPython
 # dameng-python  # 达梦数据库驱动
 
 # LLM 智能绘图模块依赖
-matplotlib>=3.5.0
 pydantic>=2.0.0
 numpy>=1.20.0
