@@ -104,30 +104,13 @@ class SchemaRAGBuilderProvider(ToolProvider):
 
             # 创建数据库配置
             db_type = credentials.get("db_type")
-            default_port = self._get_default_port(db_type)
-            db_port = credentials.get("db_port")
 
-            # 如果用户没有提供端口或端口为空，使用默认端口
-            if not db_port:
-                port = default_port
-            else:
-                port = int(db_port)
 
-            # 对于 SQLite，使用默认值处理缺失的字段
-            if db_type == "sqlite":
-                db_config = DatabaseConfig(
-                    type=db_type,
-                    host="localhost",  # SQLite 不使用，但为了兼容性设置默认值
-                    port=0,  # SQLite 不使用端口
-                    user="",  # SQLite 不需要用户名
-                    password="",  # SQLite 不需要密码
-                    database=credentials.get("db_name"),  # SQLite 的文件路径
-                )
-            elif db_type == "doris":
+            if db_type == "doris":
                 db_config = DatabaseConfig(
                     type=db_type,
                     host=credentials.get("db_host"),
-                    port=port,
+                    port=credentials.get("db_port"),
                     user=credentials.get("db_user"),
                     password=credentials.get("db_password"),
                     database=credentials.get("db_name"),
@@ -136,7 +119,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 db_config = DatabaseConfig(
                     type=db_type,
                     host=credentials.get("db_host"),
-                    port=port,
+                    port=credentials.get("db_port"),
                     user=credentials.get("db_user"),
                     password=credentials.get("db_password"),
                     database=credentials.get("db_name"),
@@ -149,6 +132,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
             logger = logging.getLogger(__name__)
             logger.setLevel(logging.INFO)
             logger.addHandler(plugin_logger_handler)
+            
             # 创建Dify集成配置
             dify_config = DifyUploadConfig(
                 api_key=credentials.get("dataset_api_key"),

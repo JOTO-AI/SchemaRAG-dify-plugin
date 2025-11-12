@@ -1,10 +1,10 @@
 # SchemaRAG Database Schema RAG Plugin
 
-[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **Author:** joto  
-**Version:** 0.1.2  
+**Version:** 0.1.3  
 **Type:** tool  
 **Repository:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -18,7 +18,7 @@
 
 SchemaRAG is a database schema RAG plugin designed specifically for the Dify platform. It can automatically analyze database structures, build knowledge bases, and implement natural language to SQL queries. This plugin provides a complete database schema analysis and intelligent query solution, ready to use out of the box.
 
-Example workflow [download](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/demo/text2sql-workflow.yml)
+Example workflow [download](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/blob/main/demo/text2sql-workflow.yml)
 
 ---
 

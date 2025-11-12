@@ -34,6 +34,14 @@ class DataProcessor:
             ValueError: 数据转换失败时抛出
         """
         try:
+            # 验证数据不为空
+            if not data:
+                raise ValueError("数据列表为空")
+            
+            # 记录调试信息
+            logger.debug(f"开始数据转换: chart_type={chart_type}, x_field={x_field}, y_field={y_field}")
+            logger.debug(f"数据记录数: {len(data)}, 第一条数据: {data[0]}")
+            
             if chart_type == "line":
                 return DataProcessor._transform_line_data(data, x_field, y_field)
             elif chart_type == "histogram":
@@ -43,10 +51,25 @@ class DataProcessor:
             else:
                 raise ValueError(f"不支持的图表类型: {chart_type}")
                 
-        except (KeyError, ValueError) as e:
+        except KeyError as e:
+            # KeyError 会返回缺失的键名
+            missing_field = str(e).strip("'\"")
+            available_fields = list(data[0].keys()) if data else []
+            logger.error(
+                f"数据转换错误: 字段'{missing_field}'不存在\n"
+                f"可用字段: {available_fields}\n"
+                f"数据示例: {data[0] if data else 'no data'}"
+            )
+            raise ValueError(
+                f"数据转换错误: 字段'{missing_field}'不存在。"
+                f"可用字段: {', '.join(available_fields)}"
+            )
+        except ValueError as e:
+            if "数据转换错误" in str(e):
+                # 已经是我们格式化的错误，直接抛出
+                raise
             logger.error(f"数据转换错误: {str(e)}\n数据示例: {data[0] if data else 'no data'}")
-            field_name = x_field if 'x_field' in str(e) else y_field
-            raise ValueError(f"数据转换错误: 字段'{field_name}'不存在或格式错误")
+            raise ValueError(f"数据转换错误: {str(e)}")
     
     @staticmethod
     def _transform_line_data(
@@ -66,13 +89,29 @@ class DataProcessor:
             折线图数据格式: [{"time": "...", "value": ...}, ...]
         """
         result = []
+        # 先验证字段是否存在（检查第一条数据）
+        if data and y_field:
+            if y_field not in data[0]:
+                available_fields = list(data[0].keys())
+                raise KeyError(
+                    f"字段 '{y_field}' 不存在。可用字段: {', '.join(available_fields)}"
+                )
+            if x_field not in data[0]:
+                available_fields = list(data[0].keys())
+                raise KeyError(
+                    f"字段 '{x_field}' 不存在。可用字段: {', '.join(available_fields)}"
+                )
+        
         for item in data:
             # 跳过 None 值
-            if y_field and item.get(y_field) is not None:
-                result.append({
-                    "time": str(item[x_field]),
-                    "value": float(str(item[y_field]).replace(',', ''))
-                })
+            if y_field:
+                y_value = item.get(y_field)
+                x_value = item.get(x_field)
+                if y_value is not None and x_value is not None:
+                    result.append({
+                        "time": str(x_value),
+                        "value": float(str(y_value).replace(',', ''))
+                    })
         return result
     
     @staticmethod
@@ -93,10 +132,18 @@ class DataProcessor:
         if not y_field:
             return []
         
+        # 验证字段是否存在
+        if data and y_field not in data[0]:
+            available_fields = list(data[0].keys())
+            raise KeyError(
+                f"字段 '{y_field}' 不存在。可用字段: {', '.join(available_fields)}"
+            )
+        
         result = []
         for item in data:
-            if item.get(y_field) is not None:
-                result.append(float(str(item[y_field]).replace(',', '')))
+            y_value = item.get(y_field)
+            if y_value is not None:
+                result.append(float(str(y_value).replace(',', '')))
         return result
     
     @staticmethod
@@ -118,13 +165,28 @@ class DataProcessor:
         """
         result = []
         
+        # 验证字段是否存在
+        if data:
+            if x_field not in data[0]:
+                available_fields = list(data[0].keys())
+                raise KeyError(
+                    f"字段 '{x_field}' 不存在。可用字段: {', '.join(available_fields)}"
+                )
+            if y_field and y_field not in data[0]:
+                available_fields = list(data[0].keys())
+                raise KeyError(
+                    f"字段 '{y_field}' 不存在。可用字段: {', '.join(available_fields)}"
+                )
+        
         if y_field:
             # 使用 y_field 的实际值
             for item in data:
                 # 跳过空的分类名称和 None 值
-                if item.get(x_field) and item.get(y_field) is not None:
-                    category = str(item[x_field])
-                    value = float(str(item[y_field]).replace(',', ''))
+                x_value = item.get(x_field)
+                y_value = item.get(y_field)
+                if x_value and y_value is not None:
+                    category = str(x_value)
+                    value = float(str(y_value).replace(',', ''))
                     result.append({
                         "category": category,
                         "value": value

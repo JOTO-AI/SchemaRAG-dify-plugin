@@ -9,7 +9,7 @@ dependencies:
 - current_identifier: null
   type: package
   value:
-    plugin_unique_identifier: joto/schemarag:0.1.2@a4f63e641022c3b3078ee6e6ac49695af2ff6a4ed23bb193b3352c5583c87cb2
+    plugin_unique_identifier: joto/schemarag:0.1.3@a4f63e641022c3b3078ee6e6ac49695af2ff6a4ed23bb193b3352c5583c87cb2
 kind: app
 version: 0.4.0
 workflow:

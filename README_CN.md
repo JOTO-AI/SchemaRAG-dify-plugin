@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.1.2  
+**版本:** 0.1.3  
 **类型:** 工具
 **仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -16,7 +16,7 @@
 
 SchemaRAG 是一个专为 Dify 平台设计的数据库架构RAG插件，能够自动分析数据库结构、构建知识库并实现自然语言转SQL查询。该插件提供了完整的数据库schema分析和智能查询解决方案，开箱即用。
 
-示例工作流[下载](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/demo/text2sql-workflow.yml)
+示例工作流[下载](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/blob/main/demo/text2sql-workflow.yml)
 
 ---
 

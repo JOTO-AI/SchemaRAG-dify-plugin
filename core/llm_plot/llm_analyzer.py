@@ -23,8 +23,8 @@ class LLMAnalyzer:
 你的回答必须是一个有效的JSON字符串，包含以下字段：
 {
     "chart_type": "图表类型，必须是 line/histogram/pie 其中之一",
-    "x_field": "X轴字段名或分类字段（必须是SQL中实际存在的字段）",
-    "y_field": "Y轴字段名或数值字段（必须是SQL中实际存在的字段，饼图可选）",
+    "x_field": "X轴字段名或分类字段",
+    "y_field": "Y轴字段名或数值字段（饼图可选）",
     "title": "图表标题",
     "description": "选择该图表类型的理由"
 }
@@ -34,10 +34,12 @@ class LLMAnalyzer:
 2. 直方图(histogram)：适用于数值分布分析
 3. 饼图(pie)：适用于占比/结构/分布数据分析
 
-重要提示：
-- 必须使用SQL查询中实际存在的字段名
-- 回答必须是一个有效的JSON字符串
-- 字段名称必须完全匹配上述格式"""
+⚠️ 极其重要的规则：
+- x_field 和 y_field 必须使用用户提供的"可用的数据字段"列表中的字段名
+- 字段名必须完全匹配，包括中文字符、大小写等
+- 不能使用通用的英文字段名（如 category、value、sales 等）
+- 必须使用实际数据中存在的字段名
+- 回答必须是一个有效的JSON字符串"""
     
     # 默认推荐配置
     DEFAULT_RECOMMENDATION = {
@@ -57,7 +59,7 @@ class LLMAnalyzer:
         """
         self.session = session
     
-    def analyze(self, user_question: str, sql_query: str, llm_model: Dict[str, Any]) -> ChartRecommendation:
+    def analyze(self, user_question: str, sql_query: str, llm_model: Dict[str, Any], data_fields: list = None) -> ChartRecommendation:
         """
         使用 LLM 分析用户问题并推荐图表类型
         
@@ -65,13 +67,14 @@ class LLMAnalyzer:
             user_question: 用户问题
             sql_query: SQL 查询语句
             llm_model: LLM 模型配置
+            data_fields: 实际数据的字段列表
             
         Returns:
             图表推荐结果
         """
         try:
             # 构建用户提示词
-            user_prompt = self._build_user_prompt(user_question, sql_query)
+            user_prompt = self._build_user_prompt(user_question, sql_query, data_fields)
             
             # 调用 LLM
             response_text = self._invoke_llm(llm_model, user_prompt)
@@ -83,22 +86,28 @@ class LLMAnalyzer:
             logger.error(f"LLM 分析失败: {str(e)}")
             return self._get_default_recommendation()
     
-    def _build_user_prompt(self, user_question: str, sql_query: str) -> str:
+    def _build_user_prompt(self, user_question: str, sql_query: str, data_fields: list = None) -> str:
         """
         构建用户提示词
         
         Args:
             user_question: 用户问题
             sql_query: SQL 查询
+            data_fields: 实际数据的字段列表
             
         Returns:
             完整的用户提示词
         """
+        fields_info = ""
+        if data_fields:
+            fields_info = f"\n可用的数据字段: {', '.join(data_fields)}"
+        
         return f"""请分析以下用户问题和SQL查询，推荐最合适的可视化方案：
 
 用户问题: {user_question}
-SQL查询: {sql_query}
+SQL查询: {sql_query}{fields_info}
 
+重要提示：x_field 和 y_field 必须从上面列出的可用字段中选择，不能使用其他字段名。
 请确保使用SQL中实际存在的字段名，并以JSON格式回答。"""
     
     def _invoke_llm(self, llm_model: Dict[str, Any], user_prompt: str) -> str:
