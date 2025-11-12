@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.1.2  
+**版本:** 0.1.3  
 **类型:** 工具
 **仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 

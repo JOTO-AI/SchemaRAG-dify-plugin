@@ -45,17 +45,21 @@ class LlmPlotTool(Tool):
             user_question = tool_parameters['user_question']
             sql_query = tool_parameters['sql_query']
             data = json.loads(
-                tool_parameters['data'] 
-                if isinstance(tool_parameters['data'], str) 
+                tool_parameters['data']
+                if isinstance(tool_parameters['data'], str)
                 else tool_parameters['data']
             )
             llm_model = tool_parameters['llm']
             
             logger.debug(f"收到参数: {json.dumps(tool_parameters, ensure_ascii=False)}")
             
+            # 2.5 提取实际数据的字段列表
+            data_fields = list(data[0].keys()) if data and len(data) > 0 else []
+            logger.debug(f"数据字段列表: {data_fields}")
+            
             # 3. 使用 LLM 分析并推荐图表
             analyzer = LLMAnalyzer(self.session)
-            recommendation = analyzer.analyze(user_question, sql_query, llm_model)
+            recommendation = analyzer.analyze(user_question, sql_query, llm_model, data_fields)
             
             logger.debug(
                 f"LLM 推荐: 类型={recommendation.chart_type}, "
