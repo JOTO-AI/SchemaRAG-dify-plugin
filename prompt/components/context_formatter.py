@@ -44,10 +44,7 @@ class ContextFormatter:
         
         history_content = "\n\n".join(history_items)
         
-        return f"""
-【对话历史】
-{history_content}
-"""
+        return history_content
     
     @staticmethod
     def format_for_llm(conversation_history: List[Dict[str, Any]]) -> List[Dict[str, str]]:

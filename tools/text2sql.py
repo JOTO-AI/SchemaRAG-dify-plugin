@@ -10,6 +10,7 @@ from service.cache import CacheManager, normalize_query, create_cache_key_from_d
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
+from tools.parameter_validator import validate_and_extract_text2sql_parameters
 
 # 导入 logging 和自定义处理器
 from dify_plugin.config.logger_format import plugin_logger_handler
@@ -171,7 +172,13 @@ class Text2SQLTool(Tool):
             
             # 步骤4: 构建预定义的prompt（包含自定义提示、示例和对话历史）
             system_prompt = text2sql_prompt._build_system_prompt(
-                dialect, schema_info, content, custom_prompt, example_info, conversation_history
+                dialect,custom_prompt
+            )
+            user_prompt = text2sql_prompt._build_user_prompt(
+                db_schema=schema_info,
+                question=content,
+                example_info=example_info,
+                conversation_history=conversation_history
             )
             
             # 步骤4.5: 检查SQL缓存（如果启用缓存且未重置记忆）
@@ -218,7 +225,7 @@ class Text2SQLTool(Tool):
                 prompt_messages=[
                     SystemPromptMessage(content=system_prompt),
                     UserPromptMessage(
-                        content=f"请根据以下问题生成SQL查询：{content}，只要输出最终sql，避免输出任何解释或其他内容。"
+                        content=user_prompt
                     ),
                 ],
                 stream=True,
