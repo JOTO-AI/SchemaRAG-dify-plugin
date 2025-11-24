@@ -95,6 +95,8 @@ def _build_user_prompt(db_schema: str, question: str, example_info: str = None, 
 
     # 构建对话历史部分
     from prompt.components.context_formatter import ContextFormatter
+    from datetime import datetime
+
     conversation_section = ""
     if conversation_history and len(conversation_history) > 0:
         conversation_section = ContextFormatter.format_conversation_history(conversation_history)
@@ -105,5 +107,7 @@ def _build_user_prompt(db_schema: str, question: str, example_info: str = None, 
 {example_info}
 【Conversation History】
 {conversation_section}
+current date: {datetime.now().strftime("%Y-%m-%d")}
+Note: Generate only the SQL query that best fits the question without any additional explanations or text.
 """
     return user_prompt
