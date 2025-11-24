@@ -54,7 +54,8 @@ class DatabaseConfig:
         elif self.type == "mssql":
             return f"mssql+pymssql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "oracle":
-            return f"oracle+oracledb://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            # Oracle 使用 service_name 格式
+            return f"oracle+oracledb://{encoded_user}:{encoded_password}@{self.host}:{self.port}/?service_name={self.database}"
         elif self.type == "dameng":
             return f"dm+dmPython://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "doris":

@@ -110,15 +110,17 @@ class Text2DataTool(Tool):
 
             try:
                 system_prompt = text2sql_prompt._build_system_prompt(
-                    dialect, schema_info, content
+                    dialect= dialect
                 )
+
+                user_prompt = text2sql_prompt._build_user_prompt(schema_info, content)
 
                 response = self.session.model.llm.invoke(
                     model_config=llm_model,
                     prompt_messages=[
                         SystemPromptMessage(content=system_prompt),
                         UserPromptMessage(
-                            content=f"请根据以下问题生成SQL查询：{content}，只要输出最终sql，避免输出任何解释或其他内容。"
+                            content=user_prompt
                         ),
                     ],
                     stream=False,  # 不使用流式响应，确保获取完整SQL
@@ -144,9 +146,9 @@ class Text2DataTool(Tool):
                     logging.error("错误: 生成的SQL查询为空")
                     raise ValueError("生成的SQL查询为空")
 
-                yield self.create_text_message(
-                    f"生成的SQL查询:\n```sql\n{sql_query}\n```"
-                )
+                # yield self.create_text_message(
+                #     f"```sql\n{sql_query}\n```\n"
+                # )
 
             except Exception as e:
                 logging.error(f"生成SQL查询时发生错误: {str(e)}")

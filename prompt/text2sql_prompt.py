@@ -1,29 +1,13 @@
-def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_prompt: str = None, example_info: str = None, conversation_history: list = None) -> str:
+def _build_system_prompt(dialect: str, custom_prompt: str = None) -> str:
     """
     构建预定义的system prompt
     
     Args:
         dialect: 数据库方言
-        db_schema: 数据库架构信息
-        question: 用户问题
         custom_prompt: 自定义指令（可选），如果提供则替换默认的Critical Requirements
-        example_info: 示例信息（可选），从示例知识库检索的内容
-        conversation_history: 对话历史记录（可选），用于多轮对话上下文
     """
     
-    # 构建示例部分
-    examples_section = ""
-    if example_info and example_info.strip():
-        examples_section = f"""
-【Examples】
-{example_info}
-"""
-    
-    # 构建对话历史部分
-    from prompt.components.context_formatter import ContextFormatter
-    conversation_section = ""
-    if conversation_history and len(conversation_history) > 0:
-        conversation_section = ContextFormatter.format_conversation_history(conversation_history)
+
     
     # 如果提供了自定义提示，则使用自定义规则替换默认的Critical Requirements
     if custom_prompt and custom_prompt.strip():
@@ -31,8 +15,6 @@ def _build_system_prompt(dialect: str, db_schema: str, question: str, custom_pro
         
         system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
 
-【Database Schema】
-{db_schema}{examples_section}{conversation_section}
 
 【Task Instructions】
 Analyze the user's question carefully and generate a precise SQL query that answers their question using only the provided schema.
@@ -56,9 +38,6 @@ Remember: Generate clean, executable SQL that directly answers the user's questi
     else:
         # 使用默认的详细规则
         system_prompt = f"""You are an expert {dialect} database analyst with deep expertise in query optimization and data analysis. Your task is to convert natural language questions into accurate, executable SQL queries.
-
-【Database Schema】
-{db_schema}{examples_section}{conversation_section}
 
 【Task Instructions】
 Analyze the user's question carefully and generate a precise SQL query that answers their question using only the provided schema.
@@ -102,3 +81,29 @@ ORDER BY t1.created_date DESC;
 Remember: Generate clean, executable SQL that directly answers the user's question using the exact schema provided."""
 
     return system_prompt
+
+def _build_user_prompt(db_schema: str, question: str, example_info: str = None, conversation_history: list = None) -> str:
+    """
+    构建预定义的user prompt
+    
+    Args:
+        db_schema: 数据库架构信息
+        question: 用户问题
+        example_info: 示例信息（可选），从示例知识库检索的内容
+        conversation_history: 对话历史记录（可选），用于多轮对话上下文
+    """
+
+    # 构建对话历史部分
+    from prompt.components.context_formatter import ContextFormatter
+    conversation_section = ""
+    if conversation_history and len(conversation_history) > 0:
+        conversation_section = ContextFormatter.format_conversation_history(conversation_history)
+    user_prompt = f"""Based on the information below, generate an accurate SQL query to answer the user's question:{question}
+【Database Schema】
+{db_schema}
+【Examples】
+{example_info}
+【Conversation History】
+{conversation_section}
+"""
+    return user_prompt

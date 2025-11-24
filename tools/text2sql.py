@@ -10,6 +10,7 @@ from service.cache import CacheManager, normalize_query, create_cache_key_from_d
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
+from tools.parameter_validator import validate_and_extract_text2sql_parameters
 
 # 导入 logging 和自定义处理器
 from dify_plugin.config.logger_format import plugin_logger_handler
@@ -110,7 +111,14 @@ class Text2SQLTool(Tool):
 
         try:
             # 验证和获取参数
-            params_result = self._validate_and_extract_parameters(tool_parameters)
+            params_result = validate_and_extract_text2sql_parameters(
+                tool_parameters,
+                max_content_length=self.MAX_CONTENT_LENGTH,
+                default_top_k=self.DEFAULT_TOP_K,
+                default_dialect=self.DEFAULT_DIALECT,
+                default_retrieval_model=self.DEFAULT_RETRIEVAL_MODEL,
+                default_memory_window=self.DEFAULT_MEMORY_WINDOW
+            )
             if isinstance(params_result, str):  # 错误消息
                 logging.error(f"错误: {params_result}")
                 raise ValueError(params_result)
@@ -164,7 +172,13 @@ class Text2SQLTool(Tool):
             
             # 步骤4: 构建预定义的prompt（包含自定义提示、示例和对话历史）
             system_prompt = text2sql_prompt._build_system_prompt(
-                dialect, schema_info, content, custom_prompt, example_info, conversation_history
+                dialect,custom_prompt
+            )
+            user_prompt = text2sql_prompt._build_user_prompt(
+                db_schema=schema_info,
+                question=content,
+                example_info=example_info,
+                conversation_history=conversation_history
             )
             
             # 步骤4.5: 检查SQL缓存（如果启用缓存且未重置记忆）
@@ -211,7 +225,7 @@ class Text2SQLTool(Tool):
                 prompt_messages=[
                     SystemPromptMessage(content=system_prompt),
                     UserPromptMessage(
-                        content=f"请根据以下问题生成SQL查询：{content}，只要输出最终sql，避免输出任何解释或其他内容。"
+                        content=user_prompt
                     ),
                 ],
                 stream=True,
@@ -275,107 +289,3 @@ class Text2SQLTool(Tool):
             self.logger.error(f"SQL生成异常: {str(e)}")
             raise ValueError(f"SQL生成异常: {str(e)}")
 
-    def _validate_and_extract_parameters(
-        self, tool_parameters: dict[str, Any]
-    ) -> Union[Tuple[str, Any, str, str, int, str, str, str, bool, int, bool, bool], str]:
-        """验证并提取工具参数，返回参数元组或错误消息"""
-        # 验证必要参数
-        dataset_id = tool_parameters.get("dataset_id")
-        if not dataset_id or not dataset_id.strip():
-            return "缺少知识库ID"
-
-        llm_model = tool_parameters.get("llm")
-        if not llm_model:
-            return "缺少LLM模型配置"
-
-        content = tool_parameters.get("content")
-        if not content or not content.strip():
-            return "缺少问题内容"
-
-        # 检查内容长度
-        if len(content) > self.MAX_CONTENT_LENGTH:
-            return f"问题内容过长，最大允许 {self.MAX_CONTENT_LENGTH} 字符，当前 {len(content)} 字符"
-
-        # 获取可选参数并设置默认值
-        dialect = tool_parameters.get("dialect", self.DEFAULT_DIALECT)
-        if dialect not in ["mysql", "postgresql", "sqlite", "oracle", "sqlserver", "mssql", "dameng", "doris"]:
-            return f"不支持的数据库方言: {dialect}"
-
-        top_k = tool_parameters.get("top_k", self.DEFAULT_TOP_K)
-        try:
-            top_k = int(top_k)
-            if top_k <= 0 or top_k > 50:
-                return "top_k 必须在 1-50 之间"
-        except (ValueError, TypeError):
-            return "top_k 必须是有效的整数"
-
-        retrieval_model = tool_parameters.get(
-            "retrieval_model", self.DEFAULT_RETRIEVAL_MODEL
-        )
-        if retrieval_model not in [
-            "semantic_search",
-            "keyword_search",
-            "hybrid_search",
-            "full_text_search",
-        ]:
-            return f"不支持的检索模型: {retrieval_model}"
-
-        # 获取自定义提示词（可选参数）
-        custom_prompt = tool_parameters.get("custom_prompt", "")
-        if custom_prompt and not isinstance(custom_prompt, str):
-            return "自定义提示词必须是字符串类型"
-
-        # 限制自定义提示词长度防止过长
-        if custom_prompt and len(custom_prompt) > 2000:
-            return f"自定义提示词过长，最大允许 2000 字符，当前 {len(custom_prompt)} 字符"
-
-        # 获取示例知识库ID（可选参数）
-        example_dataset_id = tool_parameters.get("example_dataset_id", "")
-        if example_dataset_id and not isinstance(example_dataset_id, str):
-            return "示例知识库ID必须是字符串类型"
-        
-        # 获取记忆相关参数
-        memory_enabled = tool_parameters.get("memory_enabled", "False")
-        # 处理字符串类型的布尔值（来自select选项）
-        if isinstance(memory_enabled, str):
-            memory_enabled = memory_enabled.lower() in ['true', '1', 'yes']
-        elif not isinstance(memory_enabled, bool):
-            memory_enabled = False
-        
-        memory_window_size = tool_parameters.get("memory_window_size", self.DEFAULT_MEMORY_WINDOW)
-        try:
-            memory_window_size = int(memory_window_size)
-            if memory_window_size < 1 or memory_window_size > 10:
-                return "memory_window_size 必须在 1-10 之间"
-        except (ValueError, TypeError):
-            return "memory_window_size 必须是有效的整数"
-        
-        reset_memory = tool_parameters.get("reset_memory", "False")
-        # 处理字符串类型的布尔值（来自select选项）
-        if isinstance(reset_memory, str):
-            reset_memory = reset_memory.lower() in ['true', '1', 'yes']
-        elif not isinstance(reset_memory, bool):
-            reset_memory = False
-        
-        # 获取缓存启用参数
-        cache_enabled = tool_parameters.get("cache_enabled", "true")
-        # 处理字符串类型的布尔值（来自select选项）
-        if isinstance(cache_enabled, str):
-            cache_enabled = cache_enabled.lower() in ['true', '1', 'yes']
-        elif not isinstance(cache_enabled, bool):
-            cache_enabled = True  # 默认启用
-
-        return (
-            dataset_id.strip(),
-            llm_model,
-            content.strip(),
-            dialect,
-            top_k,
-            retrieval_model,
-            custom_prompt.strip() if custom_prompt else "",
-            example_dataset_id.strip() if example_dataset_id else "",
-            memory_enabled,
-            memory_window_size,
-            reset_memory,
-            cache_enabled,
-        )

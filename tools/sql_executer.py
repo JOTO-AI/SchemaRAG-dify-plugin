@@ -15,6 +15,7 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from service.database_service import DatabaseService
 from dify_plugin.config.logger_format import plugin_logger_handler
+from tools.parameter_validator import validate_and_extract_sql_executer_parameters
 
 
 class PerformanceConfig:
@@ -137,7 +138,11 @@ class SQLExecuterTool(Tool):
             return
 
         # 验证参数
-        sql_query, output_format, max_rows, error_msg = self._validate_parameters(tool_parameters)
+        sql_query, output_format, max_rows, error_msg = validate_and_extract_sql_executer_parameters(
+            tool_parameters,
+            default_max_rows=500,
+            logger=self.logger
+        )
         if error_msg:
             self.logger.error(f"错误: {error_msg}")
             raise ValueError(error_msg)
@@ -209,33 +214,6 @@ class SQLExecuterTool(Tool):
             # 其他未预期的错误
             self.logger.error(f"SQL执行异常: {str(e)}")
             raise ValueError(f"SQL执行异常: {str(e)}")
-
-    def _validate_parameters(
-        self, tool_parameters: dict[str, Any]
-    ) -> tuple[Optional[str], Optional[str], Optional[int], Optional[str]]:
-        """验证工具参数并返回处理后的值"""
-        # 验证SQL查询
-        sql_query = tool_parameters.get("sql")
-        if not sql_query or not sql_query.strip():
-            return None, None, None, "SQL查询不能为空"
-
-        # 验证输出格式
-        output_format = tool_parameters.get("output_format", "json")
-        if output_format not in ["json", "md"]:
-            return None, None, None, "输出格式只支持 'json' 或 'md'"
-
-        # 验证max_line参数
-        max_line = tool_parameters.get("max_line", 500)  # 默认500行
-        try:
-            max_rows = int(max_line)
-            if max_rows <= 0:
-                max_rows = 500
-                self.logger.warning(f"max_line参数必须大于0，已使用默认值500: {max_line}")
-        except (ValueError, TypeError):
-            max_rows = 500
-            self.logger.warning(f"max_line参数无效，已使用默认值500: {max_line}")
-
-        return sql_query.strip(), output_format, max_rows, None
 
     def _clean_and_validate_sql(self, sql_query: str) -> Optional[str]:
         """清理和验证SQL查询，使用正则黑名单模式，禁止危险操作"""

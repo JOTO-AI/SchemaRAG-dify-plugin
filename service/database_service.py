@@ -125,7 +125,13 @@ class DatabaseService:
             if db_type == "mysql":
                 engine_args["connect_args"] = {"charset": "utf8mb4"}
             elif db_type == "oracle":
-                engine_args["thick_mode"] = False  # 使用 thin 模式
+                # Oracle 使用 thin 模式，需要在 connect_args 中配置
+                engine_args["connect_args"] = {"thick_mode": False}
+            elif db_type == "dameng":
+                # 达梦数据库特殊配置
+                engine_args["connect_args"] = {
+                    "encoding": "UTF-8",  # 设置字符编码
+                }
 
             self._engine_cache[cache_key] = create_engine(uri, **engine_args)
 
