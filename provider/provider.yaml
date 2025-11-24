@@ -169,7 +169,7 @@ tools:
   - tools/sql_executer_cust.yaml
   - tools/data_summary.yaml
   - tools/llm_plot.yaml
-  # - tools/text2data.yaml
+  - tools/text2data.yaml
 extra:
   python:
     source: provider/build_schema_rag.py
