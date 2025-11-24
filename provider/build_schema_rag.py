@@ -140,7 +140,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 indexing_technique="high_quality",
                 permission="all_team_members",
                 process_mode="custom",
-                max_tokens=1000,
+                max_tokens=4000,
             )
 
             # 解析表名参数
