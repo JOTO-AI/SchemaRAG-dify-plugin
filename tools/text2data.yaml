@@ -23,10 +23,10 @@ parameters:
       zh_Hans: 知识库ID
       pt_BR: Dataset ID
     human_description:
-      en_US: The ID of the Dify dataset containing the database schema
-      zh_Hans: 包含数据库架构的Dify知识库ID
-      pt_BR: The ID of the Dify dataset containing the database schema
-    llm_description: The dataset ID from Dify knowledge base containing database schema information
+      en_US: The ID of the Dify dataset containing the database schema. Supports multiple datasets separated by commas for comprehensive schema coverage.
+      zh_Hans: 包含数据库架构的Dify知识库ID。支持逗号分隔的多个知识库ID以获得更全面的架构覆盖。
+      pt_BR: The ID of the Dify dataset containing the database schema. Supports multiple datasets separated by commas for comprehensive schema coverage.
+    llm_description: The dataset ID from Dify knowledge base containing database schema information. Can accept multiple dataset IDs separated by commas (e.g., "dataset1,dataset2,dataset3") for retrieving from multiple knowledge bases concurrently.
     form: llm
 
   - name: llm
@@ -152,6 +152,24 @@ parameters:
           pt_BR: Hybrid Search
     default: semantic_search
 
+  - name: example_dataset_id
+    type: string
+    required: false
+    label:
+      en_US: Example Dataset ID
+      zh_Hans: 示例知识库ID
+      pt_BR: Example Dataset ID
+    human_description:
+      en_US: The ID of the Dify dataset containing SQL examples. Supports multiple datasets separated by commas for comprehensive example coverage.
+      zh_Hans: 包含SQL示例的Dify知识库ID。支持逗号分隔的多个知识库ID以获得更全面的示例覆盖。
+      pt_BR: The ID of the Dify dataset containing SQL examples. Supports multiple datasets separated by commas for comprehensive example coverage.
+    llm_description: Optional dataset ID from Dify knowledge base containing SQL examples that will be retrieved and added to the prompt to improve SQL generation accuracy. Can accept multiple dataset IDs separated by commas.
+    form: llm
+    placeholder:
+      en_US: "e.g., examples_dataset_1,examples_dataset_2"
+      zh_Hans: "例如：examples_dataset_1,examples_dataset_2"
+      pt_BR: "e.g., examples_dataset_1,examples_dataset_2"
+
   - name: output_format
     type: select
     required: true
@@ -177,6 +195,23 @@ parameters:
           en_US: Summary
           zh_Hans: 摘要
     default: json
+
+  - name: max_rows
+    type: number
+    required: false
+    label:
+      en_US: Max Rows
+      zh_Hans: 最大行数
+      pt_BR: Max Rows
+    human_description:
+      en_US: Maximum number of rows to return (default 500, prevents excessive data)
+      zh_Hans: 返回的最大行数（默认500，防止返回过多数据）
+      pt_BR: Maximum number of rows to return (default 500, prevents excessive data)
+    llm_description: The maximum number of rows to return from the query results to prevent excessive data transfer
+    form: form
+    default: 500
+    min: 1
+    max: 10000
 
 extra:
   python:
