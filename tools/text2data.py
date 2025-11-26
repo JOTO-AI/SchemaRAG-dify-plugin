@@ -7,6 +7,7 @@ import logging
 from prompt import text2sql_prompt, summary_prompt
 from service.knowledge_service import KnowledgeService
 from service.database_service import DatabaseService
+from service.sql_refiner import SQLRefiner
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
@@ -77,6 +78,16 @@ class Text2DataTool(Tool):
             output_format = tool_parameters.get("output_format", "json")
             max_rows = tool_parameters.get("max_rows", self.DEFAULT_MAX_ROWS)
             example_dataset_id = tool_parameters.get("example_dataset_id")
+            
+            # SQL Refiner 参数
+            enable_refiner = tool_parameters.get("enable_refiner", "False")
+            # 处理字符串类型的布尔值（来自select选项）
+            if isinstance(enable_refiner, str):
+                enable_refiner = enable_refiner.lower() in ['true', '1', 'yes']
+            elif not isinstance(enable_refiner, bool):
+                enable_refiner = False
+                
+            max_refine_iterations = tool_parameters.get("max_refine_iterations", 3)
 
             # 验证必要参数
             if not dataset_id:
@@ -142,8 +153,11 @@ class Text2DataTool(Tool):
                     self.logger.warning(f"检索示例信息时发生错误: {str(e)}")
                     example_info = ""
 
-            # 步骤3: 构建预定义的prompt并生成SQL
+            # 步骤3: 构建预定义的prompt并生成SQL（思考过程）
             self.logger.info("正在生成SQL查询...")
+            
+            # 输出思考过程的开始标记
+            yield self.create_text_message(text="<think>\n💭 生成SQL查询\n\n")
 
             try:
                 system_prompt = text2sql_prompt._build_system_prompt(dialect=dialect)
@@ -176,38 +190,128 @@ class Text2DataTool(Tool):
                 if not sql_query or not sql_query.strip():
                     self.logger.error("错误: 生成的SQL查询为空或无效")
                     raise ValueError("生成的SQL查询为空或无效")
+                
+                # 在思考过程中显示生成的SQL
+                yield self.create_text_message(text=f"\n{sql_query}\n\n")
 
             except Exception as e:
                 self.logger.error(f"生成SQL查询时发生错误: {str(e)}")
+                yield self.create_text_message(text="</think>\n")
                 raise
 
-            # 步骤4: 执行SQL查询
+            # 步骤4: 执行SQL查询（带Refiner支持）
             self.logger.info("正在执行SQL查询...")
-
+            # yield self.create_text_message(text="\n⚡ 执行查询\n")
+            
             try:
                 results, columns = self.db_service.execute_query(
                     self.db_type, self.db_host, self.db_port,
                     self.db_user, self.db_password, self.db_name, sql_query
                 )
+                yield self.create_text_message(text=f"✅ 执行成功\n\n共返回 {len(results)} 行数据\n\n")
+                
             except Exception as e:
                 self.logger.error(f"执行SQL查询时发生错误: {str(e)}")
-                raise
+                yield self.create_text_message(text=f"❌ 执行失败\n\n{str(e)}\n\n")
+                
+                # 如果启用了Refiner，尝试自动修复SQL
+                if enable_refiner:
+                    self.logger.info("SQL执行失败，启动SQL Refiner进行自动修复...")
+                    yield self.create_text_message(text="\n🔧 自动修复中...\n")
+                    
+                    try:
+                        # 创建Refiner实例
+                        refiner = SQLRefiner(
+                            db_service=self.db_service,
+                            llm_session=self.session,
+                            logger=self.logger
+                        )
+                        
+                        # 构建数据库配置字典
+                        db_config = {
+                            'db_type': self.db_type,
+                            'host': self.db_host,
+                            'port': self.db_port,
+                            'user': self.db_user,
+                            'password': self.db_password,
+                            'dbname': self.db_name
+                        }
+                        
+                        # 执行SQL修复
+                        refined_sql, success, error_history = refiner.refine_sql(
+                            original_sql=sql_query,
+                            schema_info=schema_info,
+                            question=content,
+                            dialect=dialect,
+                            db_config=db_config,
+                            llm_model=llm_model,
+                            max_iterations=max_refine_iterations
+                        )
+                        
+                        if success:
+                            self.logger.info(f"SQL修复成功！经过 {len(error_history)} 次迭代")
+                            # 显示修复后的SQL
+                            yield self.create_text_message(
+                                text=f"✨ 修复成功（尝试{len(error_history)}次）\n\n{refined_sql}\n\n"
+                            )
+                            
+                            # 使用修复后的SQL重新执行
+                            results, columns = self.db_service.execute_query(
+                                self.db_type, self.db_host, self.db_port,
+                                self.db_user, self.db_password, self.db_name, refined_sql
+                            )
+                            
+                            # 更新sql_query为修复后的版本（用于后续日志）
+                            sql_query = refined_sql
+                            yield self.create_text_message(text=f"✅ 执行成功\n\n共返回 {len(results)} 行数据\n\n")
+                            
+                        else:
+                            # 修复失败，返回详细错误信息
+                            error_report = refiner.format_refiner_result(
+                                original_sql=sql_query,
+                                refined_sql=refined_sql,
+                                success=False,
+                                error_history=error_history,
+                                iterations=len(error_history)
+                            )
+                            self.logger.error(f"SQL修复失败: {error_report}")
+                            yield self.create_text_message(text="</think>\n")
+                            raise ValueError(f"SQL执行失败且自动修复失败:\n\n{error_report}")
+                            
+                    except Exception as refiner_error:
+                        self.logger.error(f"SQL Refiner执行异常: {str(refiner_error)}")
+                        yield self.create_text_message(text="</think>\n")
+                        raise ValueError(f"SQL执行失败: {str(e)}\n\nRefiner修复也失败: {str(refiner_error)}")
+                else:
+                    # 未启用Refiner，直接抛出原始错误
+                    yield self.create_text_message(text="</think>\n")
+                    raise
+            
+            # 结束思考过程标记
+            yield self.create_text_message(text="</think>\n\n")
 
             # 早期检查结果
             result_count = len(results)
             if result_count == 0:
-                yield self.create_text_message("查询执行成功，但没有返回数据")
+                yield self.create_text_message("📊 **查询结果**\n\n查询执行成功，但没有返回数据")
                 return
 
             # 检查结果大小，应用最大行数限制
+            # truncated = False
             if result_count > max_rows:
                 self.logger.warning(f"警告: 查询返回了 {result_count} 行数据，结果已截断到 {max_rows} 行")
                 results = results[:max_rows]
+                # truncated = True
 
             # 格式化数值，避免科学计数法
             formatted_results = self._format_numeric_values(results)
 
-            # 步骤5: 格式化输出
+            # # 步骤5: 格式化输出（最终结果）
+            # yield self.create_text_message(text="📊 **查询结果**\n\n")
+            
+            # if truncated:
+            #     yield self.create_text_message(text=f"⚠️ *注意：查询返回 {result_count} 行数据，已截断至 {max_rows} 行*\n\n")
+            
             if output_format == "summary":
                 yield from self._handle_summary_output(formatted_results, columns, content, llm_model)
             else:

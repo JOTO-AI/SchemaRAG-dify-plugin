@@ -213,6 +213,49 @@ parameters:
     min: 1
     max: 10000
 
+  - name: enable_refiner
+    type: select
+    required: false
+    label:
+      en_US: Enable SQL Refiner
+      zh_Hans: 启用SQL自动修复
+      pt_BR: Enable SQL Refiner
+    human_description:
+      en_US: Automatically fix SQL errors using LLM-based refinement (experimental feature)
+      zh_Hans: 使用基于LLM的自动修复功能来修复SQL错误（实验性功能）
+      pt_BR: Automatically fix SQL errors using LLM-based refinement (experimental feature)
+    llm_description: Enable automatic SQL error correction through iterative refinement with LLM feedback
+    form: form
+    options:
+      - value: "true"
+        label:
+          en_US: Enable
+          zh_Hans: 启用
+          pt_BR: Enable
+      - value: "false"
+        label:
+          en_US: Disable
+          zh_Hans: 禁用
+          pt_BR: Disable
+    default: "false"
+
+  - name: max_refine_iterations
+    type: number
+    required: false
+    label:
+      en_US: Max Refine Iterations
+      zh_Hans: 最大修复次数
+      pt_BR: Max Refine Iterations
+    human_description:
+      en_US: Maximum number of attempts to refine and fix SQL errors (default 3)
+      zh_Hans: 修复SQL错误的最大尝试次数（默认3次）
+      pt_BR: Maximum number of attempts to refine and fix SQL errors (default 3)
+    llm_description: The maximum number of iterations for SQL error correction before giving up
+    form: form
+    default: 3
+    min: 1
+    max: 5
+
 extra:
   python:
     source: tools/text2data.py

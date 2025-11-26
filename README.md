@@ -174,12 +174,55 @@ Database connection URL examples:
 - mssql: mssql://user:password@host:port/dbname
 - oracle: oracle://user:password@host:port/dbname
 
-### 4. text2data Tool (Removed)
+### 4. text2data Tool
 
-**Notice:**
-This plugin was removed in v0.0.7 because using this plugin in Dify version 1.7.1 will cause the workflow front-end to crash. The subsequent Dify will fix [dify issue](https://github.com/langgenius/dify/issues/23154). Please be careful with this tool.
+**Natural Language to Data Query Tool** - Integrates text2sql and sql_executer functionality for one-stop conversion from questions to data
 
-Encapsulates the above two tools, ready to use out of the box, with added LLM summarization functionality to summarize query data into reports.
+#### Core Features
+
+- **End-to-End Query**: Convert natural language questions directly to query results without intermediate steps
+- **Multi-Database Support**: Supports MySQL, PostgreSQL, MSSQL, Oracle, and DM databases
+- **Smart Output**: Supports JSON, Markdown, and Summary output formats
+- **SQL Auto-Repair**: Experimental feature that automatically analyzes and fixes SQL errors when execution fails (requires enablement)
+- **Safe Execution**: Built-in SQL security policies to prevent dangerous operations
+- **Optimized Experience**: Uses `<think>` tags to fold intermediate processes, with clear result display
+
+#### Parameter Configuration
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| dataset_id | string | Yes | Dify knowledge base ID containing database schema, supports multiple IDs separated by commas |
+| llm | model-selector | Yes | Large language model for SQL generation and analysis |
+| content | string | Yes | Natural language question to convert to SQL |
+| dialect | select | Yes | SQL dialect (MySQL/PostgreSQL/MSSQL/Oracle/DM) |
+| output_format | select | Yes | Output format (JSON/Markdown/Summary) |
+| top_k | number | No | Number of results to retrieve from knowledge base (default 5) |
+| max_rows | number | No | Maximum number of rows to return (default 500, prevents excessive data) |
+| example_dataset_id | string | No | Example knowledge base ID, can provide SQL examples to improve generation quality |
+| enable_refiner | boolean | No | Enable SQL auto-repair feature (experimental, default false) |
+| max_refine_iterations | number | No | Maximum SQL repair attempts (1-5, default 3) |
+
+#### SQL Auto-Repair Feature (Experimental)
+
+When `enable_refiner` is enabled, if the generated SQL execution fails, the system will:
+
+1. **Auto-Analyze Errors**: Capture database error messages and specific causes
+2. **Intelligent Repair**: Use LLM to analyze errors and generate repaired SQL
+3. **Iterative Optimization**: Support up to N repair attempts (configurable)
+4. **Transparent Process**: Display repair process within `<think>` tags
+
+**Repair Scenario Examples**:
+- ✅ Column name spelling errors (e.g., `name` → `username`)
+- ✅ Table name does not exist or is incorrect
+- ✅ JOIN condition errors
+- ✅ Data type mismatches
+- ✅ Syntax errors (dialect-specific syntax)
+
+**Usage Recommendations**:
+- 🧪 Experimental feature,Enabling it will increase the consumption of tokens additionally.
+- 📝 Better results in complex Schema scenarios
+- ⚡ Adds 2-10 seconds to response time
+- 💰 Each repair consumes approximately 2000-3000 tokens
 
 ### 5. data_summary Tool
 
