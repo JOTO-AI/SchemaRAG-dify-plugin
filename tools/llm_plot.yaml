@@ -2,8 +2,8 @@ identity:
   name: llm_plot
   author: joto
   label:
-    zh_Hans: LLM 智能绘图工具
-    en_US: LLM Intelligent Plotting Tool
+    zh_Hans: 智能绘图工具
+    en_US: Intelligent Plotting Tool
 description:
   human:
     zh_Hans: 基于自然语言问题和数据自动生成可视化图表

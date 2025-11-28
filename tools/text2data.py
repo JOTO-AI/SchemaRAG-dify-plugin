@@ -13,6 +13,12 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 from dify_plugin.config.logger_format import plugin_logger_handler
 
+from utils import (
+    _clean_and_validate_sql,
+    PerformanceConfig,
+    format_numeric_values
+)
+
 # 添加项目根目录到Python路径，以便导入service模块
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
@@ -37,7 +43,7 @@ class Text2DataTool(Tool):
     DEFAULT_RETRIEVAL_MODEL = "semantic_search"
     DEFAULT_MAX_ROWS = 500
     MAX_CONTENT_LENGTH = 10000  # 最大输入内容长度
-    DECIMAL_PLACES = 2  # 小数位数
+    DECIMAL_PLACES = PerformanceConfig.DECIMAL_PLACES  # 小数位数
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -167,17 +173,35 @@ class Text2DataTool(Tool):
                     example_info=example_info
                 )
 
+                # 使用流式输出生成SQL
                 response = self.session.model.llm.invoke(
                     model_config=llm_model,
                     prompt_messages=[
                         SystemPromptMessage(content=system_prompt),
                         UserPromptMessage(content=user_prompt),
                     ],
-                    stream=False,
+                    stream=True,
                 )
 
+                # 收集流式输出的SQL查询
                 sql_query = ""
-                if hasattr(response, "message") and response.message:
+                sql_chunks = []
+                
+                # 输出一个换行符，让SQL显示更清晰
+                yield self.create_text_message(text="\n")
+                
+                for chunk in response:
+                    if chunk.delta.message and chunk.delta.message.content:
+                        chunk_content = chunk.delta.message.content
+                        sql_chunks.append(chunk_content)
+                        # 实时输出SQL片段
+                        yield self.create_text_message(text=chunk_content)
+                
+                # 合并所有片段
+                sql_query = "".join(sql_chunks).strip()
+                
+                # 如果流式输出没有内容，尝试从完整响应中获取
+                if not sql_query and hasattr(response, "message") and response.message:
                     sql_query = response.message.content.strip() if response.message.content else ""
 
                 if not sql_query:
@@ -185,14 +209,14 @@ class Text2DataTool(Tool):
                     raise ValueError("生成的SQL查询为空")
 
                 # 清理并验证SQL查询（应用安全策略）
-                sql_query = self._clean_and_validate_sql(sql_query)
+                sql_query = _clean_and_validate_sql(sql_query)
 
                 if not sql_query or not sql_query.strip():
                     self.logger.error("错误: 生成的SQL查询为空或无效")
                     raise ValueError("生成的SQL查询为空或无效")
                 
-                # 在思考过程中显示生成的SQL
-                yield self.create_text_message(text=f"\n{sql_query}\n\n")
+                # SQL已经在上面流式输出了，这里只需要添加换行
+                yield self.create_text_message(text="\n\n")
 
             except Exception as e:
                 self.logger.error(f"生成SQL查询时发生错误: {str(e)}")
@@ -373,97 +397,6 @@ class Text2DataTool(Tool):
                 self.logger.error(f"数据格式化也失败了: {str(e2)}")
                 raise
 
-    def _clean_and_validate_sql(self, sql_query: str) -> Optional[str]:
-        """清理和验证SQL查询，使用正则黑名单模式，禁止危险操作"""
-        if not sql_query:
-            return None
-
-        try:
-            # 清理 markdown 格式
-            markdown_pattern = re.compile(r"```(?:sql)?\s*(.*?)\s*```", re.DOTALL | re.IGNORECASE)
-            match = markdown_pattern.search(sql_query)
-            cleaned_sql = match.group(1).strip() if match else sql_query.strip()
-            if not cleaned_sql:
-                return None
-
-            # 移除多余空白
-            cleaned_sql = re.sub(r"\s+", " ", cleaned_sql).strip()
-            sql_lower = cleaned_sql.lower()
-
-            # 黑名单模式：禁止危险的SQL操作
-            dangerous_patterns = [
-                r'^\s*(drop|delete|truncate|update|insert|create|alter|grant|revoke)\s+',
-                r'\b(exec|execute|sp_|xp_)\b',
-                r'\b(into\s+outfile|load_file|load\s+data)\b',
-                r'\b(union\s+all\s+select.*into|select.*into)\b',
-                r';\s*(drop|delete|truncate|update|insert|create|alter)',
-                r'\b(benchmark|sleep|waitfor|delay)\b',
-                r'@@|information_schema\.(?!columns|tables|schemata)',
-            ]
-
-            # 检查是否包含危险模式
-            for pattern in dangerous_patterns:
-                if re.search(pattern, sql_lower, re.IGNORECASE):
-                    raise ValueError(f"检测到危险的SQL操作，查询被拒绝")
-
-            return cleaned_sql
-
-        except ValueError:
-            raise
-        except Exception as e:
-            self.logger.warning(f"SQL清理失败: {str(e)}")
-            return None
-
     def _format_numeric_values(self, results: List[Dict]) -> List[Dict]:
         """格式化数值，避免科学计数法，保留指定小数位数"""
-        if not results:
-            return results
-
-        formatted_results = []
-        for row in results:
-            formatted_row = {}
-            for key, value in row.items():
-                formatted_row[key] = self._format_single_value(value)
-            formatted_results.append(formatted_row)
-
-        self.logger.debug(f"数值格式化完成，处理了 {len(formatted_results)} 行数据")
-        return formatted_results
-
-    def _format_single_value(self, value) -> Any:
-        """格式化单个值，优化性能和逻辑"""
-        # 快速处理 None 和布尔值
-        if value is None or isinstance(value, bool):
-            return value
-
-        # 处理字符串和其他非数值类型
-        if not isinstance(value, (int, float)):
-            return value
-
-        try:
-            # 处理整数
-            if isinstance(value, int):
-                return str(value)
-
-            # 处理浮点数（包括 NaN 和无穷大）
-            if isinstance(value, float):
-                # 检查是否为有效数值
-                if not (value == value):  # 检查 NaN
-                    return None
-
-                # 检查无穷大
-                if abs(value) == float("inf"):
-                    return str(value)
-
-                # 检查是否为整数值（如 1.0, 2.0）
-                if value.is_integer():
-                    return str(int(value))
-                else:
-                    # 浮点数保留指定小数位数，避免科学计数法
-                    return f"{value:.{self.DECIMAL_PLACES}f}"
-
-            # 其他数值类型的安全处理
-            return str(value)
-
-        except (ValueError, OverflowError, TypeError, AttributeError):
-            # 处理异常情况，保留原始值的字符串形式
-            return str(value) if value is not None else None
+        return format_numeric_values(results, self.DECIMAL_PLACES, self.logger)

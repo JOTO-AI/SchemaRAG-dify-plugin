@@ -3,7 +3,7 @@ identity:
   author: joto
   label:
     en_US: Customize SQL Executer 
-    zh_Hans: 自定义SQL执行器
+    zh_Hans: SQL执行器(自定义)
 
 description:
   human:
