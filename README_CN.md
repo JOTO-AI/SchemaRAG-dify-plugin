@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.1.4  
+**版本:** 0.1.5  
 **类型:** 工具
 **仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -172,12 +172,55 @@ print(result)
 - mssql: mssql://user:password@host:port/dbname
 - oracle: oracle://user:password@host:port/dbname
 
-### 4. text2data 工具（删除）
+### 4. text2data 工具(推荐)
 
-**注意：**
-此插件在v0.0.7移除，原因是在dify版本1.7.1使用此插件会导致工作流前端崩溃，后续dify会修复[dify issue](https://github.com/langgenius/dify/issues/23154)。请注意版本慎用此工具。
+**自然语言转数据查询工具** - 集成 text2sql 和 sql_executer 功能，一站式完成从问题到数据的转换
 
-封装上述两种工具，开箱即用，增加 LLM 总结功能，将查询的数据总结成报告输出。
+#### 核心功能
+
+- **端到端查询**: 自然语言问题直接转换为查询结果，无需中间步骤
+- **多数据库支持**: 支持 MySQL、PostgreSQL、MSSQL、Oracle、达梦等数据库
+- **智能输出**: 支持 JSON、Markdown、Summary 三种输出格式
+- **SQL自动修复**: 实验性功能，当SQL执行失败时自动分析错误并修复（需启用）
+- **安全执行**: 内置SQL安全策略，防止危险操作
+- **优化体验**: 使用 `<think>` 标签折叠中间过程，结果清晰展示
+
+#### 参数说明
+
+| 参数名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| dataset_id | string | 是 | 包含数据库架构的Dify知识库ID，支持多个ID用逗号分隔 |
+| llm | model-selector | 是 | 用于生成SQL和分析的大语言模型 |
+| content | string | 是 | 要转换为SQL的自然语言问题 |
+| dialect | select | 是 | SQL方言（MySQL/PostgreSQL/MSSQL/Oracle/达梦）|
+| output_format | select | 是 | 输出格式（JSON/Markdown/Summary）|
+| top_k | number | 否 | 从知识库检索的结果数量（默认5）|
+| max_rows | number | 否 | 返回的最大行数（默认500，防止过多数据）|
+| example_dataset_id | string | 否 | 示例知识库ID，可提供SQL示例提高生成质量 |
+| enable_refiner | boolean | 否 | 启用SQL自动修复功能（实验性，默认false）|
+| max_refine_iterations | number | 否 | SQL修复最大尝试次数（1-5，默认3）|
+
+#### SQL自动修复功能（实验性）
+
+当启用 `enable_refiner` 时，如果生成的SQL执行失败，系统会：
+
+1. **自动分析错误**: 捕获数据库错误信息和具体原因
+2. **智能修复**: 使用LLM分析错误并生成修复后的SQL
+3. **迭代优化**: 支持最多N次修复尝试（可配置）
+4. **透明过程**: 在 `<think>` 标签中展示修复过程
+
+**修复场景示例**:
+- ✅ 列名拼写错误（如 `name` → `username`）
+- ✅ 表名不存在或错误
+- ✅ JOIN条件错误
+- ✅ 数据类型不匹配
+- ✅ 语法错误（方言特定语法）
+
+**使用建议**:
+- 🧪 实验性功能，开启会额外增加token的消耗
+- 📝 复杂Schema场景下效果更佳
+- ⚡ 会增加2-10秒的响应时间
+- 💰 每次修复消耗约2000-3000 tokens
 
 ### 5. data_summary 工具
 
