@@ -1,10 +1,10 @@
 # SchemaRAG 数据库架构RAG插件
 
-[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **作者:** joto  
-**版本:** 0.1.4  
+**版本:** 0.1.5  
 **类型:** 工具
 **仓库:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -172,7 +172,7 @@ print(result)
 - mssql: mssql://user:password@host:port/dbname
 - oracle: oracle://user:password@host:port/dbname
 
-### 4. text2data 工具
+### 4. text2data 工具(推荐)
 
 **自然语言转数据查询工具** - 集成 text2sql 和 sql_executer 功能，一站式完成从问题到数据的转换
 

@@ -1,10 +1,10 @@
 # SchemaRAG Database Schema RAG Plugin
 
-[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/weijunjiang123/schemarag)
+[![Version](https://img.shields.io/badge/version-0.1.5-blue.svg)](https://github.com/weijunjiang123/schemarag)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://www.python.org/)
 
 **Author:** joto  
-**Version:** 0.1.4  
+**Version:** 0.1.5  
 **Type:** tool  
 **Repository:** <https://github.com/JOTO-AI/SchemaRAG-dify-plugin>
 
@@ -174,7 +174,7 @@ Database connection URL examples:
 - mssql: mssql://user:password@host:port/dbname
 - oracle: oracle://user:password@host:port/dbname
 
-### 4. text2data Tool
+### 4. text2data Tool (recommend)
 
 **Natural Language to Data Query Tool** - Integrates text2sql and sql_executer functionality for one-stop conversion from questions to data
 
