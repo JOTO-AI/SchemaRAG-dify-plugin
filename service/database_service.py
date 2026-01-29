@@ -6,9 +6,12 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, ProgrammingError
 from urllib.parse import quote_plus
 
-# 尝试导入达梦数据库驱动，如果不存在则忽略
+# 尝试导入达梦数据库驱动和 SQLAlchemy 方言，如果不存在则忽略
 try:
     import dmPython
+    # 导入 dmSQLAlchemy 以注册 SQLAlchemy 方言
+    # dmSQLAlchemy 会自动注册 'dm' 方言到 SQLAlchemy
+    import sqlalchemy_dm
 
     DAMENG_AVAILABLE = True
 except ImportError:
