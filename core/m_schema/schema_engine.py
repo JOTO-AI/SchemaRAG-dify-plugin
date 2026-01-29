@@ -52,6 +52,9 @@ class SchemaEngine(SQLDatabase):
             elif self._engine.dialect.name == "postgresql":
                 # For PostgreSQL, use 'public' as default schema
                 schema = "public"
+            elif self._engine.dialect.name == "mssql":
+                # For SQL Server, use 'dbo' as default schema
+                schema = "dbo"
 
         # If a schema is specified, filter by that schema and store that value for every table.
         if schema:
