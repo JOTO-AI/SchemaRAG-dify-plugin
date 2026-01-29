@@ -47,7 +47,8 @@ class SchemaEngine(SQLDatabase):
         ] = {}  # For MySQL and similar databases, if no schema is specified but db_name is provided,
         # use db_name as the schema to avoid getting tables from all databases
         if schema is None and db_name:
-            if self._engine.dialect.name == "mysql":
+            if self._engine.dialect.name in ["mysql", "doris"]:
+                # MySQL 和 Doris 使用数据库名作为 schema
                 schema = db_name
             elif self._engine.dialect.name == "postgresql":
                 # For PostgreSQL, use 'public' as default schema
@@ -151,7 +152,8 @@ class SchemaEngine(SQLDatabase):
             schema_name = self._tables_schemas[table_name]
             dialect_name = self._engine.dialect.name
 
-            if dialect_name == "mysql" and schema_name == self._db_name:
+            if dialect_name in ["mysql", "doris"] and schema_name == self._db_name:
+                # MySQL 和 Doris 使用数据库名作为 schema，不需要前缀
                 table_with_schema = table_name
             elif dialect_name == "postgresql" and schema_name == "public":
                 table_with_schema = table_name
