@@ -1,5 +1,20 @@
 """
 图表配置和模板定义
+
+注意：AntV GPT-Vis API 仅接受以下参数：
+- type: 图表类型 (必需)
+- data: 数据数组 (必需)
+- title: 图表标题 (可选)
+- axisXTitle: X轴标题 (可选)
+- axisYTitle: Y轴标题 (可选)
+- theme: 主题 "default" | "dark" | "academy" (可选)
+- style: 样式对象，仅支持 backgroundColor, palette, lineWidth (可选)
+- binNumber: 直方图分组数量 (可选，仅直方图)
+
+其他参数如 width, height, legend, tooltip, label, statistic 等都不被接受，
+会导致 400 Bad Request 错误。
+
+参考文档: https://github.com/antvis/GPT-Vis
 """
 
 from typing import Dict, Any, List
@@ -7,18 +22,14 @@ from typing import Dict, Any, List
 
 class ChartConfig:
     """图表配置类"""
-    
+
     # AntV API 地址
     ANTV_API_URL = "https://antv-studio.alipay.com/api/gpt-vis"
-    
-    # 基础配置模板
+
+    # 基础配置模板 - 仅包含 API 接受的参数
     BASE_CONFIG: Dict[str, Any] = {
-        "source": "dify-plugin-visualization",
         "theme": "academy",
-        "width": 800,
-        "height": 600,
         "style": {
-            "texture": "default",
             "backgroundColor": "#ffffff",
             "palette": [
                 "#5B8FF9",  # 蓝色
@@ -33,78 +44,31 @@ class ChartConfig:
             ]
         }
     }
-    
-    # 折线图模板
+
+    # 折线图模板 - 仅包含 API 接受的参数
     LINE_CHART_TEMPLATE: Dict[str, Any] = {
         "type": "line",
         "title": "折线图",
         "axisXTitle": "X轴",
         "axisYTitle": "Y轴",
         "style": {
-            "lineWidth": 3,
-            "smooth": True,
-        },
-        "stack": False,
-        "legend": {
-            "position": "top-right"
-        },
-        "tooltip": {
-            "showTitle": True,
-            "showMarkers": True
+            "lineWidth": 3
         }
     }
-    
-    # 直方图模板
+
+    # 直方图模板 - 仅包含 API 接受的参数
     HISTOGRAM_CHART_TEMPLATE: Dict[str, Any] = {
         "type": "histogram",
         "title": "直方图",
         "binNumber": 10,
         "axisXTitle": "数值区间",
-        "axisYTitle": "频数",
-        "style": {
-            "backgroundColor": "#f6f8fa",
-            "fillOpacity": 0.8
-        },
-        "tooltip": {
-            "showTitle": True
-        }
+        "axisYTitle": "频数"
     }
-    
-    # 饼图模板
+
+    # 饼图模板 - 仅包含 API 接受的参数
     PIE_CHART_TEMPLATE: Dict[str, Any] = {
         "type": "pie",
-        "title": "饼图",
-        "innerRadius": 0.5,  # 环形图
-        "width": 800,
-        "height": 600,
-        "legend": {
-            "position": "right"
-        },
-        "label": {
-            "type": "inner",
-            "offset": "-30%",
-            "style": {
-                "fontSize": 14,
-                "textAlign": "center"
-            }
-        },
-        "tooltip": {
-            "showTitle": False
-        },
-        "statistic": {
-            "title": {
-                "offsetY": -8,
-                "style": {
-                    "fontSize": "14px"
-                }
-            },
-            "content": {
-                "offsetY": 4,
-                "style": {
-                    "fontSize": "20px"
-                }
-            }
-        }
+        "title": "饼图"
     }
     
     @classmethod
