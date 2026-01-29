@@ -6,9 +6,12 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, ProgrammingError
 from urllib.parse import quote_plus
 
-# 尝试导入达梦数据库驱动，如果不存在则忽略
+# 尝试导入达梦数据库驱动和 SQLAlchemy 方言，如果不存在则忽略
 try:
     import dmPython
+    # 导入 dmSQLAlchemy 以注册 SQLAlchemy 方言
+    # dmSQLAlchemy 会自动注册 'dm' 方言到 SQLAlchemy
+    import sqlalchemy_dm
 
     DAMENG_AVAILABLE = True
 except ImportError:
@@ -34,6 +37,7 @@ class DatabaseService:
         "mssql": "mssql+pymssql",
         "oracle": "oracle+oracledb",
         "dameng": "dm+dmPython",  # 达梦数据库
+        "doris": "doris+pymysql",  # Apache Doris (使用 MySQL 协议)
     }
 
     def __init__(self):
@@ -84,7 +88,7 @@ class DatabaseService:
                 f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/{dbname}"
             )
         else:
-            # MySQL, PostgreSQL, MSSQL 使用标准格式
+            # MySQL, PostgreSQL, MSSQL, Doris 使用标准格式
             return (
                 f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/{dbname}"
             )
@@ -122,8 +126,12 @@ class DatabaseService:
             }
 
             # 针对特定数据库的额外配置
-            if db_type == "mysql":
+            if db_type == "mysql" or db_type == "doris":
+                # MySQL 和 Doris 使用相同的字符集配置
                 engine_args["connect_args"] = {"charset": "utf8mb4"}
+            elif db_type == "mssql":
+                # SQL Server 配置：设置字符编码
+                engine_args["connect_args"] = {"charset": "UTF-8"}
             elif db_type == "oracle":
                 # Oracle 使用 thin 模式，需要在 connect_args 中配置
                 engine_args["connect_args"] = {"thick_mode": False}

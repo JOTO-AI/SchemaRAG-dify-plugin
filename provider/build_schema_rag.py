@@ -32,6 +32,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
             "mssql": 1433,
             "oracle": 1521,
             "dameng": 5236,
+            "doris": 9030,
         }
         return port_mapping.get(db_type, 3306)
 

@@ -48,7 +48,7 @@ class DatabaseConfig:
         encoded_password = quote_plus(self.password)
         
         if self.type == "postgresql":
-            return f"postgresql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"postgresql+psycopg2://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "mysql":
             return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         elif self.type == "mssql":

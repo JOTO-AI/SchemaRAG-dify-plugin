@@ -9,6 +9,12 @@ sys.path.append(
 from sqlalchemy.engine import Engine
 from sqlalchemy import create_engine
 from core.m_schema.schema_engine import SchemaEngine
+
+# 尝试导入达梦数据库 SQLAlchemy 方言，如果可用则自动注册
+try:
+    import sqlalchemy_dm  # noqa: F401
+except ImportError:
+    pass  # 达梦数据库支持可选
 from config import DatabaseConfig, DifyUploadConfig, LoggerConfig
 from service.dify_service import DifyUploader
 from utils import Logger, read_json
