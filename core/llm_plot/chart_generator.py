@@ -63,11 +63,11 @@ class ChartGenerator:
     ) -> Dict[str, Any]:
         """
         生成折线图配置
-        
+
         Args:
             recommendation: 图表推荐
             chart_data: 图表数据
-            
+
         Returns:
             折线图配置
         """
@@ -76,12 +76,7 @@ class ChartGenerator:
             data=chart_data,
             title=recommendation.title,
             x_title=recommendation.x_field,
-            y_title=recommendation.y_field or "",
-            style={
-                **ChartConfig.BASE_CONFIG["style"],
-                "lineWidth": 3
-            },
-            stack=False
+            y_title=recommendation.y_field or ""
         )
     
     def _generate_histogram_config(
@@ -92,28 +87,24 @@ class ChartGenerator:
     ) -> Dict[str, Any]:
         """
         生成直方图配置
-        
+
         Args:
             recommendation: 图表推荐
             chart_data: 图表数据
             original_data: 原始数据
-            
+
         Returns:
             直方图配置
         """
         bin_number = min(10, len(original_data) // 5) or 5
-        
+
         return self.config.create_chart_config(
             chart_type="histogram",
             data=chart_data,
             title=recommendation.title,
             x_title=f"{recommendation.y_field or recommendation.x_field}区间",
             y_title="数量",
-            binNumber=bin_number,
-            style={
-                **ChartConfig.BASE_CONFIG["style"],
-                "backgroundColor": "#f6f8fa"
-            }
+            binNumber=bin_number
         )
     
     def _generate_pie_config(
@@ -123,22 +114,18 @@ class ChartGenerator:
     ) -> Dict[str, Any]:
         """
         生成饼图配置
-        
+
         Args:
             recommendation: 图表推荐
             chart_data: 图表数据
-            
+
         Returns:
             饼图配置
         """
         return self.config.create_chart_config(
             chart_type="pie",
             data=chart_data,
-            title=recommendation.title,
-            innerRadius=0.5,
-            style=ChartConfig.BASE_CONFIG["style"],
-            width=800,
-            height=600
+            title=recommendation.title
         )
     
     def generate_chart_url(self, config: Dict[str, Any]) -> str:

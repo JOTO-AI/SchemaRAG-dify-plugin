@@ -173,7 +173,30 @@ palette = [
 - **URL**: `https://antv-studio.alipay.com/api/gpt-vis`
 - **超时**: 30 秒
 - **主题**: academy
-- **默认尺寸**: 800x500 (折线图/直方图), 600x400 (饼图)
+
+#### 重要：API 接受的参数限制
+
+AntV GPT-Vis API 仅接受以下参数，其他参数会导致 400 Bad Request 错误：
+
+| 参数 | 类型 | 必需 | 说明 |
+|------|------|------|------|
+| type | string | 是 | 图表类型 (line/pie/histogram) |
+| data | array | 是 | 数据数组 |
+| title | string | 否 | 图表标题 |
+| axisXTitle | string | 否 | X轴标题 |
+| axisYTitle | string | 否 | Y轴标题 |
+| theme | string | 否 | "default" \| "dark" \| "academy" |
+| style | object | 否 | 仅支持 backgroundColor, palette, lineWidth |
+| binNumber | number | 否 | 直方图分组数量 (仅直方图) |
+
+**不支持的参数**（会导致 400 错误）：
+- `width`, `height` - 尺寸由 API 自动控制
+- `legend`, `tooltip`, `label` - 图例、提示、标签配置
+- `innerRadius`, `statistic` - 饼图特殊配置
+- `stack`, `smooth` - 折线图特殊配置
+- `source`, `texture` - 自定义来源和纹理
+
+参考文档: https://github.com/antvis/GPT-Vis
 
 ## 📝 版本信息
 
