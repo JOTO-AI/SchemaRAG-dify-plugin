@@ -130,8 +130,8 @@ class DatabaseService:
                 # MySQL 和 Doris 使用相同的字符集配置
                 engine_args["connect_args"] = {"charset": "utf8mb4"}
             elif db_type == "mssql":
-                # SQL Server 配置：设置字符编码
-                engine_args["connect_args"] = {"charset": "UTF-8"}
+                # SQL Server (pymssql) 配置：charset 使用小写 utf8
+                engine_args["connect_args"] = {"charset": "utf8"}
             elif db_type == "oracle":
                 # Oracle 使用 thin 模式，需要在 connect_args 中配置
                 engine_args["connect_args"] = {"thick_mode": False}

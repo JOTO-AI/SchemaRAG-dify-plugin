@@ -47,11 +47,42 @@ class SchemaRAGBuilder:
         self.logger_manager = Logger(self.logger_config)
         self.logger = self.logger_manager.get_logger()
         self.engine: Optional[Engine] = create_engine(
-            self.db_config.get_connection_string()
+            self.db_config.get_connection_string(),
+            **self._get_engine_args()
         )
         self.uploader: Optional[DifyUploader] = None
         self.schema_engine: Optional[SchemaEngine] = None
         self._initialize_components()
+
+    def _get_engine_args(self) -> dict:
+        """
+        根据数据库类型获取 SQLAlchemy 引擎参数
+
+        Returns:
+            引擎配置参数字典
+        """
+        engine_args = {
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+            "echo": False,
+        }
+
+        db_type = self.db_config.type
+
+        if db_type == "mysql" or db_type == "doris":
+            engine_args["connect_args"] = {"charset": "utf8mb4"}
+        elif db_type == "mssql":
+            # SQL Server (pymssql) 配置：charset 使用小写 utf8
+            engine_args["connect_args"] = {"charset": "utf8"}
+        elif db_type == "oracle":
+            engine_args["connect_args"] = {"thick_mode": False}
+        elif db_type == "dameng":
+            engine_args["connect_args"] = {"encoding": "UTF-8"}
+        elif db_type == "postgresql":
+            # PostgreSQL 使用 psycopg2，默认支持 UTF-8
+            pass
+
+        return engine_args
 
     @staticmethod
     def from_config_file(
