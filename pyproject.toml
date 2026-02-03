@@ -19,7 +19,6 @@ dependencies = [
     "pytest>=8.4.1",
     "dmpython>=2.5.22",
     "dmsqlalchemy>=2.0.0",  # 达梦数据库 SQLAlchemy 方言适配器
-    "psycopg2>=2.9.10",
     "openpyxl>=3.1.5",
     "xlrd>=2.0.2",
 ]
