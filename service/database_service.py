@@ -134,7 +134,7 @@ class DatabaseService:
                 engine_args["connect_args"] = {"charset": "utf8"}
             elif db_type == "oracle":
                 # Oracle 使用 thin 模式，需要在 connect_args 中配置
-                engine_args["connect_args"] = {"thick_mode": False}
+                engine_args["connect_args"] = {"thick_mode_dsn_passthrough": False}
             elif db_type == "dameng":
                 # 达梦数据库特殊配置
                 engine_args["connect_args"] = {
