@@ -1,6 +1,6 @@
 [project]
 name = "SchemaRAG"
-version = "0.1.5"
+version = "0.1.6"
 description = "Build database schema for RAG in Dify dataset"
 readme = "README.md"
 requires-python = ">=3.12"
