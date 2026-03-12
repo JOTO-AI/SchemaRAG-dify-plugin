@@ -57,7 +57,7 @@ class DatabaseConfig:
             # Oracle 使用 service_name 格式
             return f"oracle+oracledb://{encoded_user}:{encoded_password}@{self.host}:{self.port}/?service_name={self.database}"
         elif self.type == "dameng":
-            return f"dm+dmPython://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"dm+dmPython://{encoded_user}:{encoded_password}@{self.host}:{self.port}"
         elif self.type == "doris":
             return f"doris+mysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
         else:

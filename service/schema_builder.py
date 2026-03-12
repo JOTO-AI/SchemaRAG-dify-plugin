@@ -77,7 +77,8 @@ class SchemaRAGBuilder:
         elif db_type == "oracle":
             engine_args["connect_args"] = {"thick_mode": False}
         elif db_type == "dameng":
-            engine_args["connect_args"] = {"encoding": "UTF-8"}
+            schema = self.db_config.database
+            engine_args["connect_args"] = {'schema': schema}
         elif db_type == "postgresql":
             # PostgreSQL 使用 psycopg2，默认支持 UTF-8
             pass
