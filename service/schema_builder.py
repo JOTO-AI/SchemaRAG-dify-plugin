@@ -7,12 +7,12 @@ sys.path.append(
 )  # 添加上级目录到路径中
 
 from sqlalchemy.engine import Engine
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from core.m_schema.schema_engine import SchemaEngine
 
 # 尝试导入达梦数据库 SQLAlchemy 方言，如果可用则自动注册
 try:
-    import sqlalchemy_dm  # noqa: F401
+    import dmSQLAlchemy  # noqa: F401
 except ImportError:
     pass  # 达梦数据库支持可选
 from config import DatabaseConfig, DifyUploadConfig, LoggerConfig
@@ -50,6 +50,18 @@ class SchemaRAGBuilder:
             self.db_config.get_connection_string(),
             **self._get_engine_args()
         )
+
+        # 达梦数据库需要在每次连接建立时切换到正确的 schema
+        if self.db_config.type == "dameng":
+            dbname = self.db_config.database
+
+            @event.listens_for(self.engine, "connect")
+            def set_dameng_schema(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                # 达梦用双引号包裹 schema 名保持大小写
+                cursor.execute(f'ALTER SESSION SET CURRENT_SCHEMA = "{dbname}"')
+                cursor.close()
+
         self.uploader: Optional[DifyUploader] = None
         self.schema_engine: Optional[SchemaEngine] = None
         self._initialize_components()
@@ -77,7 +89,8 @@ class SchemaRAGBuilder:
         elif db_type == "oracle":
             engine_args["connect_args"] = {"thick_mode": False}
         elif db_type == "dameng":
-            engine_args["connect_args"] = {"encoding": "UTF-8"}
+            # dmPython.connect() 不接受 encoding 参数，达梦 schema 切换由事件监听器处理
+            pass
         elif db_type == "postgresql":
             # PostgreSQL 使用 psycopg2，默认支持 UTF-8
             pass

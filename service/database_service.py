@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List, Tuple, Optional
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, ProgrammingError
 from urllib.parse import quote_plus
@@ -11,7 +11,7 @@ try:
     import dmPython
     # 导入 dmSQLAlchemy 以注册 SQLAlchemy 方言
     # dmSQLAlchemy 会自动注册 'dm' 方言到 SQLAlchemy
-    import sqlalchemy_dm
+    import dmSQLAlchemy
 
     DAMENG_AVAILABLE = True
 except ImportError:
@@ -83,10 +83,9 @@ class DatabaseService:
                 raise ValueError(
                     "DamengDB support requires dmPython package to be installed"
                 )
-            # 达梦使用标准格式
-            return (
-                f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/{dbname}"
-            )
+            # 达梦 dmPython.connect() 不接受 'database' 参数，不能在 URI 路径里带 dbname
+            # dbname 会作为 connect_args 单独传入（在 _get_or_create_engine 里处理）
+            return f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}"
         else:
             # MySQL, PostgreSQL, MSSQL, Doris 使用标准格式
             return (
@@ -136,12 +135,20 @@ class DatabaseService:
                 # Oracle 使用 thin 模式，需要在 connect_args 中配置
                 engine_args["connect_args"] = {"thick_mode_dsn_passthrough": False}
             elif db_type == "dameng":
-                # 达梦数据库特殊配置
-                engine_args["connect_args"] = {
-                    "encoding": "UTF-8",  # 设置字符编码
-                }
+                # 达梦 dmPython.connect() 只接受 host/port/user/password，不接受 database/encoding
+                # dbname 对应达梦 schema，通过 SQLAlchemy 事件监听器在连接建立后执行切 schema
+                pass
 
-            self._engine_cache[cache_key] = create_engine(uri, **engine_args)
+            engine = create_engine(uri, **engine_args)
+
+            if db_type == "dameng":
+                @event.listens_for(engine, "connect")
+                def set_schema(dbapi_connection, connection_record):
+                    cursor = dbapi_connection.cursor()
+                    cursor.execute(f'ALTER SESSION SET CURRENT_SCHEMA = "{dbname}"')
+                    cursor.close()
+
+            self._engine_cache[cache_key] = engine
 
         return self._engine_cache[cache_key]
 

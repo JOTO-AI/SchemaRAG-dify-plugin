@@ -8,7 +8,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # 尝试导入达梦数据库 SQLAlchemy 方言，如果可用则自动注册
 try:
-    import sqlalchemy_dm  # noqa: F401
+    import dmSQLAlchemy  # noqa: F401
 except ImportError:
     pass  # 达梦数据库支持可选
 
@@ -114,13 +114,23 @@ class SQLDatabase:
         self._max_string_length = max_string_length
 
         self._metadata = metadata or MetaData()
-        # including view support if view_support = true
-        self._metadata.reflect(
-            views=view_support,
-            bind=self._engine,
-            only=list(self._usable_tables),
-            schema=self._schema,
-        )
+        # Reflecting metadata can trigger dialect-specific index/introspection code.
+        # dmSQLAlchemy has compatibility issues with some SQLAlchemy 2.x versions during
+        # index reflection; schema generation in this project relies primarily on the
+        # Inspector APIs, so we can safely skip/ignore reflect failures for Dameng.
+        try:
+            self._metadata.reflect(
+                views=view_support,
+                bind=self._engine,
+                only=list(self._usable_tables),
+                schema=self._schema,
+            )
+        except Exception:
+            if self._engine.dialect.name in ["dm", "dameng"]:
+                # Best-effort: proceed without reflected MetaData
+                self._metadata = metadata or MetaData()
+            else:
+                raise
 
     @property
     def engine(self) -> Engine:
