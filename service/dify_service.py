@@ -23,6 +23,8 @@ except ImportError:
 class DifyUploader:
     """Dify文件上传器"""
 
+    DATASET_PAGE_SIZE = 100
+
     def __init__(self, config: DifyUploadConfig, logger: logging.Logger):
         if KnowledgeBaseClient is None:
             raise ImportError(
@@ -41,19 +43,28 @@ class DifyUploader:
             self.logger.info(f"从缓存中获取数据集ID: {dataset_name}")
             return self._dataset_cache[dataset_name]
 
-        # 首先尝试查找现有数据集
+        # 首先尝试分页查找现有数据集
         def try_find_existing_dataset():
             try:
-                response_data = self.client.list_datasets().json()
-                datasets = response_data.get("data", [])
-                for dataset in datasets:
-                    if dataset.get("name") == dataset_name:
-                        dataset_id = dataset.get("id")
-                        self.logger.info(
-                            f"找到现有数据集: {dataset_name} (ID: {dataset_id})"
-                        )
-                        self._dataset_cache[dataset_name] = dataset_id
-                        return dataset_id
+                page = 1
+                while True:
+                    response_data = self.client.list_datasets(
+                        page=page, page_size=self.DATASET_PAGE_SIZE
+                    ).json()
+                    datasets = response_data.get("data", [])
+                    for dataset in datasets:
+                        if dataset.get("name") == dataset_name:
+                            dataset_id = dataset.get("id")
+                            self.logger.info(
+                                f"找到现有数据集: {dataset_name} (ID: {dataset_id})"
+                            )
+                            self._dataset_cache[dataset_name] = dataset_id
+                            return dataset_id
+
+                    if not self._has_next_dataset_page(response_data, page, datasets):
+                        return None
+                    page += 1
+
                 return None
             except Exception as e:
                 self.logger.warning(f"查找现有数据集时出错: {e}")
@@ -87,14 +98,29 @@ class DifyUploader:
                 if existing_dataset_id:
                     return existing_dataset_id
                 else:
-                    # 如果还是找不到，可能是权限问题或其他问题，但不应该抛出异常
-                    # 因为数据集确实存在，只是我们无法访问它
-                    self.logger.warning(f"数据集 {dataset_name} 应该存在但无法找到，可能存在权限问题")
-                    # 尝试使用数据集名称作为最后的手段
-                    raise Exception(f"数据集 {dataset_name} 已存在但无法获取其ID，请检查权限设置")
+                    self.logger.warning(
+                        f"数据集 {dataset_name} 已存在但无法找到，可能存在权限问题"
+                    )
+                    raise Exception(
+                        f"数据集 {dataset_name} 已存在但无法获取其ID，请检查权限设置"
+                    )
             
             self.logger.error(f"创建数据集 {dataset_name} 失败: {e}")
             raise
+
+    def _has_next_dataset_page(
+        self, response_data: dict, page: int, datasets: list
+    ) -> bool:
+        """根据 Dify 分页响应判断是否还有下一页数据集。"""
+        if response_data.get("has_more") is True:
+            return True
+
+        total = response_data.get("total")
+        page_size = response_data.get("limit") or len(datasets)
+        if isinstance(total, int) and isinstance(page_size, int) and page_size > 0:
+            return page * page_size < total
+
+        return False
 
     def upload_file(self, file_path: str):
         """上传单个文件到指定的数据集"""

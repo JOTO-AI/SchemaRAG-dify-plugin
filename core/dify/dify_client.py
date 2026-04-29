@@ -8,9 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class DifyClient:
+    DEFAULT_TIMEOUT = 30.0
+
     def __init__(self, api_key, base_url: str):
         self.api_key = api_key
         self.base_url = base_url
+
+    def _create_http_client(self):
+        """创建 HTTP 客户端，避免内网 Dify API 被环境代理劫持。"""
+        return httpx.Client(timeout=self.DEFAULT_TIMEOUT, trust_env=False)
 
     def _send_request(self, method, endpoint, json=None, params=None, stream=False):
         headers = {
@@ -20,7 +26,7 @@ class DifyClient:
 
         url = f"{self.base_url}{endpoint}"
         try:
-            with httpx.Client() as client:
+            with self._create_http_client() as client:
                 response = client.request(
                     method, url, json=json, params=params, headers=headers
                 )
@@ -42,6 +48,8 @@ class DifyClient:
         except httpx.RequestError as e:
             logger.error(f"请求异常: {str(e)}")
             raise ValueError(f"API请求异常: {str(e)}")
+        except ValueError:
+            raise
         except Exception as e:
             logger.error(f"未知异常: {str(e)}")
             raise ValueError(f"未知错误: {str(e)}")
@@ -50,7 +58,7 @@ class DifyClient:
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         url = f"{self.base_url}{endpoint}"
-        with httpx.Client() as client:
+        with self._create_http_client() as client:
             response = client.request(
                 method, url, data=data, headers=headers, files=files
             )
@@ -268,7 +276,7 @@ class KnowledgeBaseClient(DifyClient):
         }
         if extra_params is not None and isinstance(extra_params, dict):
             data.update(extra_params)
-        url = f"/datasets/{self._get_dataset_id()}/document/create_by_text"
+        url = f"/datasets/{self._get_dataset_id()}/document/create-by-text"
         return self._send_request("POST", url, json=data, **kwargs)
 
     def update_document_by_text(
@@ -304,7 +312,7 @@ class KnowledgeBaseClient(DifyClient):
         if extra_params is not None and isinstance(extra_params, dict):
             data.update(extra_params)
         url = (
-            f"/datasets/{self._get_dataset_id()}/documents/{document_id}/update_by_text"
+            f"/datasets/{self._get_dataset_id()}/documents/{document_id}/update-by-text"
         )
         return self._send_request("POST", url, json=data, **kwargs)
 
@@ -358,7 +366,7 @@ class KnowledgeBaseClient(DifyClient):
             if original_document_id is not None:
                 data["original_document_id"] = original_document_id
 
-            url = f"/datasets/{self._get_dataset_id()}/document/create_by_file"
+            url = f"/datasets/{self._get_dataset_id()}/document/create-by-file"
             return self._send_request_with_files(
                 "POST", url, {"data": json.dumps(data)}, files
             )
@@ -407,7 +415,7 @@ class KnowledgeBaseClient(DifyClient):
             data = {}
             if extra_params is not None and isinstance(extra_params, dict):
                 data.update(extra_params)
-            url = f"/datasets/{self._get_dataset_id()}/documents/{document_id}/update_by_file"
+            url = f"/datasets/{self._get_dataset_id()}/documents/{document_id}/update-by-file"
             return self._send_request_with_files(
                 "POST", url, {"data": json.dumps(data)}, files
             )
