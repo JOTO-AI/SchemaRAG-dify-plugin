@@ -27,9 +27,17 @@ class SchemaEngine(SQLDatabase):
         mschema: Optional[MSchema] = None,
         db_name: Optional[str] = "",
     ):
+        # Some dialects (notably Dameng) represent the "database name" as a schema/owner.
+        # SQLDatabase must receive the effective schema up-front so inspector/metadata reflect
+        # does not accidentally pull objects from other schemas.
+        effective_schema = schema
+        if effective_schema is None and db_name:
+            if engine.dialect.name in ["dm", "dameng"]:
+                effective_schema = db_name.lower()
+
         super().__init__(
             engine,
-            schema,
+            effective_schema,
             metadata,
             ignore_tables,
             include_tables,
@@ -46,26 +54,29 @@ class SchemaEngine(SQLDatabase):
             str, str
         ] = {}  # For MySQL and similar databases, if no schema is specified but db_name is provided,
         # use db_name as the schema to avoid getting tables from all databases
-        if schema is None and db_name:
+        if effective_schema is None and db_name:
             if self._engine.dialect.name in ["mysql", "doris"]:
                 # MySQL 和 Doris 使用数据库名作为 schema
-                schema = db_name
+                effective_schema = db_name
             elif self._engine.dialect.name == "postgresql":
                 # For PostgreSQL, use 'public' as default schema
-                schema = "public"
+                effective_schema = "public"
             elif self._engine.dialect.name == "mssql":
                 # For SQL Server, use 'dbo' as default schema
-                schema = "dbo"
+                effective_schema = "dbo"
+            elif self._engine.dialect.name in ["dm", "dameng"]:
+                # 达梦的 db_name 对应 schema，Dameng 返回的 schema 名为小写
+                effective_schema = db_name.lower() if db_name else None
 
         # If a schema is specified, filter by that schema and store that value for every table.
-        if schema:
+        if effective_schema:
             self._usable_tables = [
                 table_name
                 for table_name in self._usable_tables
-                if self._inspector.has_table(table_name, schema)
+                if self._inspector.has_table(table_name, effective_schema)
             ]
             for table_name in self._usable_tables:
-                self._tables_schemas[table_name] = schema
+                self._tables_schemas[table_name] = effective_schema
         else:
             all_tables = []
             # Iterate through all available schemas
@@ -80,7 +91,7 @@ class SchemaEngine(SQLDatabase):
         if mschema is not None:
             self._mschema = mschema
         else:
-            self._mschema = MSchema(db_id=db_name, schema=schema)
+            self._mschema = MSchema(db_id=db_name, schema=effective_schema)
             self.init_mschema()
 
     @property
@@ -157,7 +168,7 @@ class SchemaEngine(SQLDatabase):
                 table_with_schema = table_name
             elif dialect_name == "postgresql" and schema_name == "public":
                 table_with_schema = table_name
-            elif dialect_name in ["mssql", "oracle", "dameng"]:
+            elif dialect_name in ["mssql", "oracle", "dm", "dameng"]:
                 # For SQL Server, Oracle, and Dameng, include schema if not default
                 if schema_name and schema_name.lower() not in ["dbo", "public", "main"]:
                     table_with_schema = schema_name + "." + table_name
