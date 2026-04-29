@@ -10,6 +10,7 @@ sys.path.append(
 )  # 添加上级目录到路径中
 
 from dify_plugin import ToolProvider
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from tools.text2sql import Text2SQLTool
 from tools.sql_executer import SQLExecuterTool
 from config import DatabaseConfig, LoggerConfig, DifyUploadConfig
@@ -40,62 +41,90 @@ class SchemaRAGBuilderProvider(ToolProvider):
         """
         Validate the credentials and build schema RAG
         """
-        # 验证必要的凭据
-        api_uri = credentials.get("api_uri")
-        dataset_api_key = credentials.get("dataset_api_key")
-        db_type = credentials.get("db_type")
-        db_host = credentials.get("db_host")
-        db_user = credentials.get("db_user")
-        db_password = credentials.get("db_password")
-        db_name = credentials.get("db_name")
-        # build_rag = credentials.get("build_rag", True)
+        try:
+            # 验证必要的凭据
+            api_uri = credentials.get("api_uri")
+            dataset_api_key = credentials.get("dataset_api_key")
+            db_type = credentials.get("db_type")
+            db_host = credentials.get("db_host")
+            db_user = credentials.get("db_user")
+            db_password = credentials.get("db_password")
+            db_name = credentials.get("db_name")
+            # build_rag = credentials.get("build_rag", True)
 
-        # 验证API相关参数
-        if not api_uri:
-            raise ValueError("API URI is required")
+            # 验证API相关参数
+            if not api_uri:
+                raise ToolProviderCredentialValidationError("API URI is required")
 
-        if not dataset_api_key:
-            raise ValueError("Dataset API key is required")
+            if not dataset_api_key:
+                raise ToolProviderCredentialValidationError(
+                    "Dataset API key is required"
+                )
 
-        # 验证数据库相关参数
-        if not db_type:
-            raise ValueError("Database type is required")
+            # 验证数据库相关参数
+            if not db_type:
+                raise ToolProviderCredentialValidationError(
+                    "Database type is required"
+                )
 
-        # SQLite 只需要数据库名称（文件路径）
-        if db_type == "sqlite":
-            if not db_name:
-                raise ValueError("Database name (file path) is required for SQLite")
-        elif db_type == "doris":
-            # Doris需要host, port, user, password, database
-            if not db_host:
-                raise ValueError("Doris database host is required")
-            if not db_user:
-                raise ValueError("Doris database user is required")
-            if not db_password:
-                raise ValueError("Doris database password is required")
-            if not db_name:
-                raise ValueError("Doris database name is required")
-        else:
-            # 其他数据库类型需要完整的连接信息
-            if not db_host:
-                raise ValueError("Database host is required")
+            # SQLite 只需要数据库名称（文件路径）
+            if db_type == "sqlite":
+                if not db_name:
+                    raise ToolProviderCredentialValidationError(
+                        "Database name (file path) is required for SQLite"
+                    )
+            elif db_type == "doris":
+                # Doris需要host, port, user, password, database
+                if not db_host:
+                    raise ToolProviderCredentialValidationError(
+                        "Doris database host is required"
+                    )
+                if not db_user:
+                    raise ToolProviderCredentialValidationError(
+                        "Doris database user is required"
+                    )
+                if not db_password:
+                    raise ToolProviderCredentialValidationError(
+                        "Doris database password is required"
+                    )
+                if not db_name:
+                    raise ToolProviderCredentialValidationError(
+                        "Doris database name is required"
+                    )
+            else:
+                # 其他数据库类型需要完整的连接信息
+                if not db_host:
+                    raise ToolProviderCredentialValidationError(
+                        "Database host is required"
+                    )
 
-            if not db_user:
-                raise ValueError("Database user is required")
+                if not db_user:
+                    raise ToolProviderCredentialValidationError(
+                        "Database user is required"
+                    )
 
-            if not db_password:
-                raise ValueError("Database password is required")
+                if not db_password:
+                    raise ToolProviderCredentialValidationError(
+                        "Database password is required"
+                    )
 
-            if not db_name:
-                raise ValueError("Database name is required")
+                if not db_name:
+                    raise ToolProviderCredentialValidationError(
+                        "Database name is required"
+                    )
 
-        self._build_schema_rag(credentials)
-        # 凭据验证成功后，根据build_rag参数决定是否构建schema知识库
-        # if build_rag:
-        #     self._build_schema_rag(credentials)
-        # else:
-        #     # 记录跳过构建的信息
-        #     logging.info("🚫 build_rag参数为False，跳过Schema RAG构建")
+            self._build_schema_rag(credentials)
+            # 凭据验证成功后，根据build_rag参数决定是否构建schema知识库
+            # if build_rag:
+            #     self._build_schema_rag(credentials)
+            # else:
+            #     # 记录跳过构建的信息
+            #     logging.info("🚫 build_rag参数为False，跳过Schema RAG构建")
+        except ToolProviderCredentialValidationError:
+            raise
+        except Exception as e:
+            logging.error(f"❌ Provider凭据校验失败: {e}")
+            raise ToolProviderCredentialValidationError(str(e)) from e
 
     def _build_schema_rag(self, credentials: dict[str, Any]) -> None:
         """

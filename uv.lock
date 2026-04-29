@@ -219,6 +219,18 @@ wheels = [
 ]
 
 [[package]]
+name = "dmsqlalchemy"
+version = "2.0.12"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dmpython" },
+    { name = "sqlalchemy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/aa/b5154b3d0555c9bde5cd1b494514793bc2755df327b03e050232e02b6f59/dmsqlalchemy-2.0.12-py3-none-any.whl", hash = "sha256:e20a9fa4120e681c9ff660ae8abdcd51ecb6e86fab6837924a5e86a8a94fdbb3", size = 59252, upload-time = "2026-04-27T06:32:58.27Z" },
+]
+
+[[package]]
 name = "dpkt"
 version = "1.9.8"
 source = { registry = "https://pypi.org/simple" }
@@ -675,17 +687,6 @@ wheels = [
 ]
 
 [[package]]
-name = "psycopg2"
-version = "2.9.11"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/89/8d/9d12bc8677c24dad342ec777529bce705b3e785fa05d85122b5502b9ab55/psycopg2-2.9.11.tar.gz", hash = "sha256:964d31caf728e217c697ff77ea69c2ba0865fa41ec20bb00f0977e62fdcc52e3", size = 379598, upload-time = "2025-10-10T11:14:46.075Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/bf/635fbe5dd10ed200afbbfbe98f8602829252ca1cce81cc48fb25ed8dadc0/psycopg2-2.9.11-cp312-cp312-win_amd64.whl", hash = "sha256:e03e4a6dbe87ff81540b434f2e5dc2bddad10296db5eea7bdc995bf5f4162938", size = 2713969, upload-time = "2025-10-10T11:10:15.946Z" },
-    { url = "https://files.pythonhosted.org/packages/88/5a/18c8cb13fc6908dc41a483d2c14d927a7a3f29883748747e8cb625da6587/psycopg2-2.9.11-cp313-cp313-win_amd64.whl", hash = "sha256:8dc379166b5b7d5ea66dcebf433011dfc51a7bb8a5fc12367fa05668e5fc53c8", size = 2714048, upload-time = "2025-10-10T11:10:19.816Z" },
-    { url = "https://files.pythonhosted.org/packages/47/08/737aa39c78d705a7ce58248d00eeba0e9fc36be488f9b672b88736fbb1f7/psycopg2-2.9.11-cp314-cp314-win_amd64.whl", hash = "sha256:f10a48acba5fe6e312b891f290b4d2ca595fc9a06850fe53320beac353575578", size = 2803738, upload-time = "2025-10-10T11:10:23.196Z" },
-]
-
-[[package]]
 name = "psycopg2-binary"
 version = "2.9.10"
 source = { registry = "https://pypi.org/simple" }
@@ -965,17 +966,17 @@ wheels = [
 
 [[package]]
 name = "schemarag"
-version = "0.1.6"
+version = "0.1.7"
 source = { editable = "." }
 dependencies = [
     { name = "dify-client" },
     { name = "dify-plugin" },
-    { name = "dmpython" },
+    { name = "dmpython", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "dmsqlalchemy", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "httpx" },
     { name = "openpyxl" },
     { name = "oracledb" },
     { name = "pandas" },
-    { name = "psycopg2" },
     { name = "psycopg2-binary" },
     { name = "pymssql" },
     { name = "pymysql" },
@@ -989,12 +990,12 @@ dependencies = [
 requires-dist = [
     { name = "dify-client" },
     { name = "dify-plugin" },
-    { name = "dmpython", specifier = ">=2.5.22" },
+    { name = "dmpython", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = ">=2.5.22" },
+    { name = "dmsqlalchemy", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = ">=2.0.0" },
     { name = "httpx" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "oracledb" },
     { name = "pandas", specifier = ">=2.3.1" },
-    { name = "psycopg2", specifier = ">=2.9.10" },
     { name = "psycopg2-binary" },
     { name = "pymssql" },
     { name = "pymysql" },
