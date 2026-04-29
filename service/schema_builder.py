@@ -87,7 +87,7 @@ class SchemaRAGBuilder:
             # SQL Server (pymssql) 配置：charset 使用小写 utf8
             engine_args["connect_args"] = {"charset": "utf8"}
         elif db_type == "oracle":
-            engine_args["connect_args"] = {"thick_mode": False}
+            engine_args["connect_args"] = {"thick_mode_dsn_passthrough": False}
         elif db_type == "dameng":
             # dmPython.connect() 不接受 encoding 参数，达梦 schema 切换由事件监听器处理
             pass
