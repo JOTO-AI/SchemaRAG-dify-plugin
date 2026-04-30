@@ -6,6 +6,7 @@
 import sys
 import types
 import unittest
+import logging
 from pathlib import Path
 from unittest.mock import patch
 
@@ -49,7 +50,7 @@ def _install_provider_import_stubs():
     tools_text2sql.Text2SQLTool = Text2SQLTool
     tools_sql_executer.SQLExecuterTool = SQLExecuterTool
     schema_builder.SchemaRAGBuilder = SchemaRAGBuilder
-    logger_format.plugin_logger_handler = None
+    logger_format.plugin_logger_handler = logging.NullHandler()
 
     sys.modules["dify_plugin"] = dify_plugin
     sys.modules["dify_plugin.errors"] = errors
@@ -110,6 +111,48 @@ class TestProviderCredentials(unittest.TestCase):
             self.provider._validate_credentials(VALID_CREDENTIALS)
 
         build_schema.assert_called_once_with(VALID_CREDENTIALS)
+
+    def test_build_schema_converts_text_port_to_integer(self):
+        """Provider 构建 schema 时将 Dify 文本端口转换为整数"""
+        created_configs = []
+
+        class FakeSchemaRAGBuilder:
+            def __init__(self, db_config, logger_config, dify_config, include_tables):
+                created_configs.append(db_config)
+
+            def generate_dictionary(self):
+                return "# users"
+
+            def upload_text_to_dify(self, dataset_name, schema_content):
+                pass
+
+            def close(self):
+                pass
+
+        credentials = VALID_CREDENTIALS | {
+            "db_type": "oracle",
+            "db_port": "1522",
+            "db_name": "ORCL",
+        }
+
+        with patch(
+            "provider.build_schema_rag.SchemaRAGBuilder",
+            FakeSchemaRAGBuilder,
+        ):
+            self.provider._build_schema_rag(credentials)
+
+        self.assertEqual(1, len(created_configs))
+        self.assertIsInstance(created_configs[0].port, int)
+        self.assertEqual(1522, created_configs[0].port)
+
+    def test_invalid_text_port_raises_validation_error(self):
+        """端口不是整数时抛出 Dify 凭据校验异常"""
+        credentials = VALID_CREDENTIALS | {"db_port": "not-a-port"}
+
+        with self.assertRaises(ToolProviderCredentialValidationError) as context:
+            self.provider._validate_credentials(credentials)
+
+        self.assertIn("Database port must be a valid integer", str(context.exception))
 
 
 if __name__ == "__main__":
