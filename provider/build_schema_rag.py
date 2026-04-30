@@ -37,6 +37,19 @@ class SchemaRAGBuilderProvider(ToolProvider):
         }
         return port_mapping.get(db_type, 3306)
 
+    def _parse_db_port(self, credentials: dict[str, Any]) -> int:
+        """
+        解析 Dify 文本输入中的数据库端口
+        """
+        db_type = credentials.get("db_type")
+        db_port = credentials.get("db_port")
+        if db_port in (None, ""):
+            return self._get_default_port(db_type)
+        try:
+            return int(db_port)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Database port must be a valid integer") from exc
+
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """
         Validate the credentials and build schema RAG
@@ -134,13 +147,14 @@ class SchemaRAGBuilderProvider(ToolProvider):
 
             # 创建数据库配置
             db_type = credentials.get("db_type")
+            db_port = self._parse_db_port(credentials)
 
 
             if db_type == "doris":
                 db_config = DatabaseConfig(
                     type=db_type,
                     host=credentials.get("db_host"),
-                    port=credentials.get("db_port"),
+                    port=db_port,
                     user=credentials.get("db_user"),
                     password=credentials.get("db_password"),
                     database=credentials.get("db_name"),
@@ -149,7 +163,7 @@ class SchemaRAGBuilderProvider(ToolProvider):
                 db_config = DatabaseConfig(
                     type=db_type,
                     host=credentials.get("db_host"),
-                    port=credentials.get("db_port"),
+                    port=db_port,
                     user=credentials.get("db_user"),
                     password=credentials.get("db_password"),
                     database=credentials.get("db_name"),

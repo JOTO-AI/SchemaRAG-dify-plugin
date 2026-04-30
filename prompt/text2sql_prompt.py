@@ -100,13 +100,22 @@ def _build_user_prompt(db_schema: str, question: str, example_info: str = None, 
     conversation_section = ""
     if conversation_history and len(conversation_history) > 0:
         conversation_section = ContextFormatter.format_conversation_history(conversation_history)
+
+    example_section = ""
+    if example_info and example_info.strip():
+        example_section = f"""
+【Examples】
+{example_info.strip()}"""
+
+    conversation_history_section = ""
+    if conversation_section:
+        conversation_history_section = f"""
+【Conversation History】
+{conversation_section}"""
+
     user_prompt = f"""Based on the information below, generate an accurate SQL query to answer the user's question:{question}
 【Database Schema】
-{db_schema}
-【Examples】
-{example_info}
-【Conversation History】
-{conversation_section}
+{db_schema}{example_section}{conversation_history_section}
 current date: {datetime.now().strftime("%Y-%m-%d")}
 Note: Generate only the SQL query that best fits the question without any additional explanations or text.
 """

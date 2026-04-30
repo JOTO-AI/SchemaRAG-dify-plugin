@@ -17,7 +17,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 from service.knowledge_service import KnowledgeService
-from tools.text2sql import Text2SQLTool
+from tools.parameter_validator import validate_and_extract_text2sql_parameters
 
 
 class TestMultipleDatasetSupport(unittest.TestCase):
@@ -62,10 +62,10 @@ class TestMultipleDatasetSupport(unittest.TestCase):
         self.assertEqual(result, "")
 
     @patch('httpx.AsyncClient')
-    async def test_async_multiple_dataset_retrieval(self, mock_client):
+    def test_async_multiple_dataset_retrieval(self, mock_client):
         """测试异步多数据集检索"""
         # 模拟异步HTTP响应
-        mock_response = AsyncMock()
+        mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "records": [
@@ -79,24 +79,16 @@ class TestMultipleDatasetSupport(unittest.TestCase):
         
         # 测试异步检索
         dataset_ids = ["dataset1", "dataset2"]
-        results = await self.knowledge_service._retrieve_from_multiple_datasets_async(
-            dataset_ids, "test query", 5, "semantic_search"
+        results = asyncio.run(
+            self.knowledge_service._retrieve_from_multiple_datasets_async(
+                dataset_ids, "test query", 5, "semantic_search"
+            )
         )
         
         self.assertEqual(len(results), 2)
 
     def test_text2sql_tool_parameter_validation(self):
         """测试Text2SQL工具参数验证"""
-        # 创建模拟的Text2SQL工具实例
-        mock_runtime = Mock()
-        mock_runtime.credentials = {
-            "api_uri": "https://test-api.com",
-            "dataset_api_key": "test-key"
-        }
-        
-        tool = Text2SQLTool()
-        tool.runtime = mock_runtime
-        
         # 测试有效参数
         valid_params = {
             "dataset_id": "dataset1,dataset2",
@@ -109,21 +101,13 @@ class TestMultipleDatasetSupport(unittest.TestCase):
             "example_dataset_id": "examples_dataset"
         }
         
-        result = tool._validate_and_extract_parameters(valid_params)
+        result = validate_and_extract_text2sql_parameters(valid_params)
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 8)  # 包含新的example_dataset_id参数
+        self.assertEqual(len(result), 12)
+        self.assertEqual(result[7], "examples_dataset")
 
     def test_text2sql_tool_example_dataset_validation(self):
         """测试示例数据集参数验证"""
-        mock_runtime = Mock()
-        mock_runtime.credentials = {
-            "api_uri": "https://test-api.com",
-            "dataset_api_key": "test-key"
-        }
-        
-        tool = Text2SQLTool()
-        tool.runtime = mock_runtime
-        
         # 测试无效的示例数据集参数
         invalid_params = {
             "dataset_id": "dataset1",
@@ -132,7 +116,7 @@ class TestMultipleDatasetSupport(unittest.TestCase):
             "example_dataset_id": 123  # 应该是字符串，不是数字
         }
         
-        result = tool._validate_and_extract_parameters(invalid_params)
+        result = validate_and_extract_text2sql_parameters(invalid_params)
         self.assertIsInstance(result, str)  # 应该返回错误消息
         self.assertIn("示例知识库ID必须是字符串类型", result)
 
@@ -165,14 +149,14 @@ class TestPromptBuildingWithExamples(unittest.TestCase):
 
     def test_prompt_with_examples(self):
         """测试包含示例的提示词构建"""
-        from prompt.text2sql_prompt import _build_system_prompt
+        from prompt.text2sql_prompt import _build_user_prompt
         
         dialect = "mysql"
         db_schema = "CREATE TABLE users (id INT, name VARCHAR(255));"
         question = "Get all users"
         example_info = "SELECT * FROM users WHERE status = 'active';"
         
-        prompt = _build_system_prompt(dialect, db_schema, question, None, example_info)
+        prompt = _build_user_prompt(db_schema, question, example_info)
         
         self.assertIn("【Examples】", prompt)
         self.assertIn(example_info, prompt)
@@ -180,20 +164,20 @@ class TestPromptBuildingWithExamples(unittest.TestCase):
 
     def test_prompt_without_examples(self):
         """测试不包含示例的提示词构建"""
-        from prompt.text2sql_prompt import _build_system_prompt
+        from prompt.text2sql_prompt import _build_user_prompt
         
         dialect = "mysql"
         db_schema = "CREATE TABLE users (id INT, name VARCHAR(255));"
         question = "Get all users"
         
-        prompt = _build_system_prompt(dialect, db_schema, question)
+        prompt = _build_user_prompt(db_schema, question)
         
         self.assertNotIn("【Examples】", prompt)
         self.assertIn("【Database Schema】", prompt)
 
     def test_prompt_with_custom_instructions_and_examples(self):
         """测试同时包含自定义指令和示例的提示词构建"""
-        from prompt.text2sql_prompt import _build_system_prompt
+        from prompt.text2sql_prompt import _build_system_prompt, _build_user_prompt
         
         dialect = "mysql"
         db_schema = "CREATE TABLE users (id INT, name VARCHAR(255));"
@@ -201,11 +185,12 @@ class TestPromptBuildingWithExamples(unittest.TestCase):
         custom_prompt = "Always use explicit joins"
         example_info = "SELECT u.id, u.name FROM users u WHERE u.status = 'active';"
         
-        prompt = _build_system_prompt(dialect, db_schema, question, custom_prompt, example_info)
+        system_prompt = _build_system_prompt(dialect, custom_prompt)
+        user_prompt = _build_user_prompt(db_schema, question, example_info)
         
-        self.assertIn("【Examples】", prompt)
-        self.assertIn(example_info, prompt)
-        self.assertIn(custom_prompt, prompt)
+        self.assertIn(custom_prompt, system_prompt)
+        self.assertIn("【Examples】", user_prompt)
+        self.assertIn(example_info, user_prompt)
 
 
 if __name__ == "__main__":

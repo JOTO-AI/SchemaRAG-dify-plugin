@@ -1,74 +1,193 @@
-name: Plugin Publish Workflow
+name: Plugin Release Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "要发布的版本 tag，例如 v0.1.8 或 0.1.8"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: plugin-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  DIFY_CLI_VERSION: "0.0.6"
+  DIFY_PLUGINS_FORK_OWNER: ${{ vars.DIFY_PLUGINS_FORK_OWNER || 'JOTO-Tech' }}
+  DIFY_PLUGINS_UPSTREAM_REPO: ${{ vars.DIFY_PLUGINS_UPSTREAM_REPO || 'langgenius/dify-plugins' }}
+  DIFY_PLUGIN_REGISTRY_NAMESPACE: ${{ vars.DIFY_PLUGIN_REGISTRY_NAMESPACE }}
+  PYTHONPATH: ${{ github.workspace }}
 
 jobs:
   publish:
+    name: Build package and publish release
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+          fetch-depth: 0
 
-      - name: Download CLI tool
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run tests
+        run: uv run --no-sync pytest test/
+
+      - name: Download Dify plugin CLI
         run: |
-          mkdir -p $RUNNER_TEMP/bin
-          cd $RUNNER_TEMP/bin
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          cd "$RUNNER_TEMP/bin"
 
-          wget https://github.com/langgenius/dify-plugin-daemon/releases/download/0.0.6/dify-plugin-linux-amd64
+          wget "https://github.com/langgenius/dify-plugin-daemon/releases/download/${DIFY_CLI_VERSION}/dify-plugin-linux-amd64"
           chmod +x dify-plugin-linux-amd64
 
           echo "CLI tool location:"
           pwd
           ls -la dify-plugin-linux-amd64
 
-      - name: Get basic info from manifest
+      - name: Get release info from manifest
         id: get_basic_info
         run: |
-          PLUGIN_NAME=$(grep "^name:" manifest.yaml | cut -d' ' -f2)
+          set -euo pipefail
+
+          TAG_NAME="${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}"
+          PLUGIN_NAME="$(awk -F': *' '$1 == "name" { print $2; exit }' manifest.yaml | tr -d '"')"
+          VERSION="$(awk -F': *' '$1 == "version" { print $2; exit }' manifest.yaml | tr -d '"')"
+          AUTHOR="$(awk -F': *' '$1 == "author" { print $2; exit }' manifest.yaml | tr -d '"')"
+          TAG_VERSION="${TAG_NAME#v}"
+
+          if [ -z "$PLUGIN_NAME" ] || [ -z "$VERSION" ] || [ -z "$AUTHOR" ]; then
+            echo "::error::manifest.yaml 缺少 name、version 或 author"
+            exit 1
+          fi
+
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "::error::tag 版本 ${TAG_VERSION} 与 manifest.yaml 版本 ${VERSION} 不一致"
+            exit 1
+          fi
+
+          PACKAGE_NAME="${PLUGIN_NAME}-${VERSION}.difypkg"
+          RELEASE_TITLE="${PLUGIN_NAME} ${TAG_NAME}"
+          REGISTRY_NAMESPACE="${DIFY_PLUGIN_REGISTRY_NAMESPACE:-$AUTHOR}"
+
           echo "Plugin name: $PLUGIN_NAME"
-          echo "plugin_name=$PLUGIN_NAME" >> $GITHUB_OUTPUT
-
-          VERSION=$(grep "^version:" manifest.yaml | cut -d' ' -f2)
           echo "Plugin version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-          # If the author's name is not your github username, you can change the author here
-          AUTHOR=$(grep "^author:" manifest.yaml | cut -d' ' -f2)
           echo "Plugin author: $AUTHOR"
-          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+          echo "Release tag: $TAG_NAME"
+          echo "Package name: $PACKAGE_NAME"
+          echo "Registry namespace: $REGISTRY_NAMESPACE"
 
-      - name: Package Plugin
+          {
+            echo "tag_name=$TAG_NAME"
+            echo "plugin_name=$PLUGIN_NAME"
+            echo "version=$VERSION"
+            echo "author=$AUTHOR"
+            echo "package_name=$PACKAGE_NAME"
+            echo "release_title=$RELEASE_TITLE"
+            echo "registry_namespace=$REGISTRY_NAMESPACE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Package plugin
         id: package
         run: |
-          cd $GITHUB_WORKSPACE
-          PACKAGE_NAME="${{ steps.get_basic_info.outputs.plugin_name }}-${{ steps.get_basic_info.outputs.version }}.difypkg"
-          $RUNNER_TEMP/bin/dify-plugin-linux-amd64 plugin package . -o "$PACKAGE_NAME"
+          set -euo pipefail
+          PACKAGE_NAME="${{ steps.get_basic_info.outputs.package_name }}"
+
+          "$RUNNER_TEMP/bin/dify-plugin-linux-amd64" plugin package . -o "$PACKAGE_NAME"
 
           echo "Package result:"
           ls -la "$PACKAGE_NAME"
-          echo "package_name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "package_path=$GITHUB_WORKSPACE/$PACKAGE_NAME" >> "$GITHUB_OUTPUT"
 
-          echo "\nFull file path:"
-          pwd
-          echo "\nDirectory structure:"
-          tree || ls -R
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG_NAME="${{ steps.get_basic_info.outputs.tag_name }}"
 
-      - name: Checkout target repo
-        uses: actions/checkout@v3
+          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            -f tag_name="$TAG_NAME" \
+            -f target_commitish="$GITHUB_SHA" \
+            --jq '.body' > "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create or update project release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG_NAME="${{ steps.get_basic_info.outputs.tag_name }}"
+          RELEASE_TITLE="${{ steps.get_basic_info.outputs.release_title }}"
+          PACKAGE_NAME="${{ steps.get_basic_info.outputs.package_name }}"
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release edit "$TAG_NAME" \
+              --title "$RELEASE_TITLE" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          else
+            gh release create "$TAG_NAME" \
+              --title "$RELEASE_TITLE" \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
+              --verify-tag
+          fi
+
+          gh release upload "$TAG_NAME" "$PACKAGE_NAME" --clobber
+
+      - name: Check external publish token
+        id: external_token
+        env:
+          PLUGIN_ACTION_TOKEN: ${{ secrets.PLUGIN_ACTION }}
+        run: |
+          if [ -n "$PLUGIN_ACTION_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::未配置 PLUGIN_ACTION，跳过外部 dify-plugins 同步 PR"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout dify-plugins fork
+        if: steps.external_token.outputs.available == 'true'
+        uses: actions/checkout@v4
         with:
-          repository: ${{steps.get_basic_info.outputs.author}}/dify-plugins
+          repository: ${{ env.DIFY_PLUGINS_FORK_OWNER }}/dify-plugins
           path: dify-plugins
           token: ${{ secrets.PLUGIN_ACTION }}
           fetch-depth: 1
           persist-credentials: true
 
-      - name: Prepare and create PR
+      - name: Prepare external plugin package update
+        if: steps.external_token.outputs.available == 'true'
+        id: external_update
         run: |
-          PACKAGE_NAME="${{ steps.get_basic_info.outputs.plugin_name }}-${{ steps.get_basic_info.outputs.version }}.difypkg"
-          mkdir -p dify-plugins/${{ steps.get_basic_info.outputs.author }}/${{ steps.get_basic_info.outputs.plugin_name }}
-          mv "$PACKAGE_NAME" dify-plugins/${{ steps.get_basic_info.outputs.author }}/${{ steps.get_basic_info.outputs.plugin_name }}/
+          set -euo pipefail
+
+          PACKAGE_NAME="${{ steps.get_basic_info.outputs.package_name }}"
+          PLUGIN_NAME="${{ steps.get_basic_info.outputs.plugin_name }}"
+          VERSION="${{ steps.get_basic_info.outputs.version }}"
+          REGISTRY_NAMESPACE="${{ steps.get_basic_info.outputs.registry_namespace }}"
+          BRANCH_NAME="bump-${PLUGIN_NAME}-plugin-${VERSION}"
+
+          mkdir -p "dify-plugins/${REGISTRY_NAMESPACE}/${PLUGIN_NAME}"
+          cp "$PACKAGE_NAME" "dify-plugins/${REGISTRY_NAMESPACE}/${PLUGIN_NAME}/"
 
           cd dify-plugins
 
@@ -76,34 +195,38 @@ jobs:
           git config user.email "actions@github.com"
 
           git fetch origin main
-          git checkout main
-          git pull origin main
+          git checkout -B "$BRANCH_NAME" origin/main
+          git add "${REGISTRY_NAMESPACE}/${PLUGIN_NAME}/${PACKAGE_NAME}"
 
-          BRANCH_NAME="bump-${{ steps.get_basic_info.outputs.plugin_name }}-plugin-${{ steps.get_basic_info.outputs.version }}"
-          git checkout -b "$BRANCH_NAME"
+          if git diff --cached --quiet; then
+            echo "外部 dify-plugins 仓库中插件包没有变化，跳过提交和 PR"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-          git add .
-          git commit -m "bump ${{ steps.get_basic_info.outputs.plugin_name }} plugin to version ${{ steps.get_basic_info.outputs.version }}"
-
+          git commit -m "bump ${PLUGIN_NAME} plugin to version ${VERSION}"
           git push -u origin "$BRANCH_NAME" --force
 
-          git branch -a
-          echo "Waiting for branch to sync..."
-          sleep 10  # Wait 10 seconds for branch sync
+          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Create PR via GitHub API
+      - name: Create external dify-plugins PR
+        if: steps.external_token.outputs.available == 'true' && steps.external_update.outputs.changed == 'true'
         env:
-          # How to config the token:
-          # 1. Profile -> Settings -> Developer settings -> Personal access tokens -> Generate new token (with repo scope) -> Copy the token
-          # 2. Go to the target repository -> Settings -> Secrets and variables -> Actions -> New repository secret -> Add the token as PLUGIN_ACTION
           GH_TOKEN: ${{ secrets.PLUGIN_ACTION }}
         run: |
+          set -euo pipefail
+
+          PLUGIN_NAME="${{ steps.get_basic_info.outputs.plugin_name }}"
+          VERSION="${{ steps.get_basic_info.outputs.version }}"
+          BRANCH_NAME="${{ steps.external_update.outputs.branch_name }}"
+
           gh pr create \
-            --repo langgenius/dify-plugins \
-            --head "${{ steps.get_basic_info.outputs.author }}:${{ steps.get_basic_info.outputs.plugin_name }}-${{ steps.get_basic_info.outputs.version }}" \
+            --repo "$DIFY_PLUGINS_UPSTREAM_REPO" \
+            --head "${DIFY_PLUGINS_FORK_OWNER}:${BRANCH_NAME}" \
             --base main \
-            --title "bump ${{ steps.get_basic_info.outputs.plugin_name }} plugin to version ${{ steps.get_basic_info.outputs.version }}" \
-            --body "bump ${{ steps.get_basic_info.outputs.plugin_name }} plugin package to version ${{ steps.get_basic_info.outputs.version }}
+            --title "bump ${PLUGIN_NAME} plugin to version ${VERSION}" \
+            --body "bump ${PLUGIN_NAME} plugin package to version ${VERSION}
 
             Changes:
-            - Updated plugin package file" || echo "PR already exists or creation skipped." # Handle cases where PR already exists
+            - Updated plugin package file" || echo "PR already exists or creation skipped."

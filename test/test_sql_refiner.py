@@ -166,7 +166,8 @@ class TestSQLRefiner(unittest.TestCase):
         )
         
         self.assertFalse(success)
-        self.assertEqual(len(error_history), 3)
+        self.assertEqual(len(error_history), 2)
+        self.assertEqual(refined_sql, "SELECT * FROM invalid_table")
     
     def test_refine_sql_llm_returns_empty(self):
         """测试LLM返回空SQL的情况"""

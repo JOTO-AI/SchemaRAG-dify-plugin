@@ -1,0 +1,84 @@
+name: Plugin Package Check
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - "codex/**"
+      - "feature/**"
+      - "fix/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-check-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  DIFY_CLI_VERSION: "0.0.6"
+  PYTHONPATH: ${{ github.workspace }}
+
+jobs:
+  package-check:
+    name: Test and package plugin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run tests
+        run: uv run --no-sync pytest test/
+
+      - name: Download Dify plugin CLI
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bin"
+          cd "$RUNNER_TEMP/bin"
+
+          wget "https://github.com/langgenius/dify-plugin-daemon/releases/download/${DIFY_CLI_VERSION}/dify-plugin-linux-amd64"
+          chmod +x dify-plugin-linux-amd64
+
+      - name: Get package info from manifest
+        id: package_info
+        run: |
+          set -euo pipefail
+
+          PLUGIN_NAME="$(awk -F': *' '$1 == "name" { print $2; exit }' manifest.yaml | tr -d '"')"
+          VERSION="$(awk -F': *' '$1 == "version" { print $2; exit }' manifest.yaml | tr -d '"')"
+
+          if [ -z "$PLUGIN_NAME" ] || [ -z "$VERSION" ]; then
+            echo "::error::manifest.yaml 缺少 name 或 version"
+            exit 1
+          fi
+
+          echo "package_name=${PLUGIN_NAME}-${VERSION}.difypkg" >> "$GITHUB_OUTPUT"
+
+      - name: Package plugin
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/bin/dify-plugin-linux-amd64" plugin package . -o "${{ steps.package_info.outputs.package_name }}"
+          ls -la "${{ steps.package_info.outputs.package_name }}"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dify-plugin-package
+          path: "*.difypkg"
+          if-no-files-found: error

@@ -1,165 +1,77 @@
 """
 基本图表生成测试
-测试图表生成器的基本功能
+测试 AntV 图表配置生成和 URL 提取逻辑
 """
-import sys
-import os
-from pathlib import Path
 
-# 添加项目路径
-sys.path.append(str(Path(__file__).parent.parent))
+from unittest.mock import Mock, patch
 
 from core.llm_plot.chart_generator import ChartGenerator
+from core.llm_plot.models import ChartRecommendation
 
-def test_basic_bar_chart():
-    """
-    测试基本柱状图生成
-    """
-    print("\n🧪 测试基本柱状图生成")
-    
-    # 创建输出目录
-    output_dir = Path("output/basic_test")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # 创建图表生成器
-    chart_gen = ChartGenerator(str(output_dir))
-    
-    # 基本柱状图配置
-    config = {
-        "chart_type": "bar",
-        "title": "测试柱状图",
-        "x_axis": {
-            "label": "类别",
-            "data": ["A", "B", "C", "D", "E"]
-        },
-        "y_axis": {
-            "label": "数值",
-            "data": [10, 15, 7, 12, 9]
-        },
-        "style": {
-            "format": "png",
-            "colors": ["#3498db"]
-        },
-        "description": "这是一个测试柱状图"
-    }
-    
-    try:
-        # 生成图表
-        chart_path = chart_gen.generate_chart(config)
-        print(f"✅ 成功生成柱状图: {chart_path}")
-        return True
-    except Exception as e:
-        print(f"❌ 柱状图生成失败: {str(e)}")
-        return False
 
-def test_basic_pie_chart():
-    """
-    测试基本饼图生成
-    """
-    print("\n🧪 测试基本饼图生成")
-    
-    # 创建输出目录
-    output_dir = Path("output/basic_test")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # 创建图表生成器
-    chart_gen = ChartGenerator(str(output_dir))
-    
-    # 基本饼图配置
-    config = {
-        "chart_type": "pie",
-        "title": "测试饼图",
-        "pie_data": {
-            "labels": ["A", "B", "C", "D"],
-            "values": [35, 25, 20, 15]
-        },
-        "style": {
-            "format": "png",
-            "high_contrast": True
-        },
-        "description": "这是一个测试饼图"
-    }
-    
-    try:
-        # 生成图表
-        chart_path = chart_gen.generate_chart(config)
-        print(f"✅ 成功生成饼图: {chart_path}")
-        return True
-    except Exception as e:
-        print(f"❌ 饼图生成失败: {str(e)}")
-        return False
-
-def test_svg_output():
-    """
-    测试SVG输出格式
-    """
-    print("\n🧪 测试SVG输出格式")
-    
-    # 创建输出目录
-    output_dir = Path("output/basic_test")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # 创建图表生成器
-    chart_gen = ChartGenerator(str(output_dir))
-    
-    # SVG格式折线图配置
-    config = {
-        "chart_type": "line",
-        "title": "测试折线图 (SVG格式)",
-        "x_axis": {
-            "label": "时间",
-            "data": ["Jan", "Feb", "Mar", "Apr", "May"]
-        },
-        "line_series": [
-            {
-                "label": "系列A",
-                "data": [10, 15, 13, 17, 20]
-            }
-        ],
-        "style": {
-            "format": "svg",
-            "grid": True,
-            "grid_alpha": 0.6
-        },
-        "description": "这是一个测试折线图 (SVG格式)"
-    }
-    
-    try:
-        # 生成图表
-        chart_path = chart_gen.generate_chart(config)
-        print(f"✅ 成功生成SVG格式折线图: {chart_path}")
-        return True
-    except Exception as e:
-        print(f"❌ SVG格式折线图生成失败: {str(e)}")
-        return False
-
-def run_tests():
-    """运行所有测试"""
-    print("=" * 50)
-    print("📊 图表生成器基本功能测试")
-    print("=" * 50)
-    
-    tests = [
-        test_basic_bar_chart,
-        test_basic_pie_chart,
-        test_svg_output
+def test_generate_line_chart_config():
+    """测试折线图配置生成"""
+    generator = ChartGenerator()
+    recommendation = ChartRecommendation(
+        chart_type="line",
+        title="销售趋势",
+        x_field="month",
+        y_field="amount",
+        description="时间序列适合折线图",
+    )
+    data = [
+        {"month": "Jan", "amount": 10},
+        {"month": "Feb", "amount": 15},
     ]
-    
-    results = []
-    for test in tests:
-        results.append(test())
-    
-    print("\n" + "=" * 50)
-    success_count = results.count(True)
-    total_count = len(results)
-    print(f"📋 测试结果: {success_count}/{total_count} 成功")
-    
-    if success_count == total_count:
-        print("✅ 所有测试通过!")
-    else:
-        print("❌ 有测试失败!")
-    
-    print(f"📁 测试图表保存在: {os.path.abspath('output/basic_test')}")
 
-if __name__ == "__main__":
-    run_tests()
+    config = generator.generate_chart_config(recommendation, data)
+
+    assert config["type"] == "line"
+    assert config["title"] == "销售趋势"
+    assert config["axisXTitle"] == "month"
+    assert config["axisYTitle"] == "amount"
+    assert config["data"] == [
+        {"time": "Jan", "value": 10.0},
+        {"time": "Feb", "value": 15.0},
+    ]
+
+
+def test_generate_pie_chart_config():
+    """测试饼图配置生成"""
+    generator = ChartGenerator()
+    recommendation = ChartRecommendation(
+        chart_type="pie",
+        title="市场份额",
+        x_field="brand",
+        y_field="share",
+        description="占比数据适合饼图",
+    )
+    data = [
+        {"brand": "华为", "share": 30},
+        {"brand": "小米", "share": 25},
+    ]
+
+    config = generator.generate_chart_config(recommendation, data)
+
+    assert config["type"] == "pie"
+    assert config["title"] == "市场份额"
+    assert config["data"] == [
+        {"category": "华为", "value": 30},
+        {"category": "小米", "value": 25},
+    ]
+
+
+def test_generate_chart_url_reads_antv_result_object():
+    """测试从 AntV 响应中提取图表 URL"""
+    generator = ChartGenerator()
+    response = Mock()
+    response.json.return_value = {
+        "success": True,
+        "resultObj": "https://example.com/chart.png",
+    }
+
+    with patch("core.llm_plot.chart_generator.requests.post", return_value=response) as post:
+        chart_url = generator.generate_chart_url({"type": "pie", "data": []})
+
+    assert chart_url == "https://example.com/chart.png"
+    post.assert_called_once()
