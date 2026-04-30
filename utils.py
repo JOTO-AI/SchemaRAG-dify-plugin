@@ -99,6 +99,27 @@ def examples_to_str(examples: list) -> list[str]:
 
     return [str(v) for v in values if v is not None and len(str(v)) > 0]
 
+
+def normalize_dameng_schema_name(schema_name: Optional[str]) -> Optional[str]:
+    """规范化达梦 schema/owner 名称，未加引号的标识符按达梦规则转为大写。"""
+    if schema_name is None:
+        return None
+
+    normalized = str(schema_name).strip()
+    if not normalized:
+        return normalized
+
+    if len(normalized) >= 2 and normalized.startswith('"') and normalized.endswith('"'):
+        return normalized[1:-1].replace('""', '"')
+
+    return normalized.upper()
+
+
+def quote_dameng_identifier(identifier: str) -> str:
+    """安全地为达梦标识符添加双引号。"""
+    return f'"{identifier.replace("\"", "\"\"")}"'
+
+
 def _clean_and_validate_sql(sql_query: str) -> Optional[str]:
     """清理和验证SQL查询，使用正则黑名单模式，禁止危险操作"""
     if not sql_query:

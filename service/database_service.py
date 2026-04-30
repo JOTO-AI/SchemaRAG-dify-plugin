@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, text, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, ProgrammingError
 from urllib.parse import quote_plus
+from utils import normalize_dameng_schema_name, quote_dameng_identifier
 
 # 尝试导入达梦数据库驱动和 SQLAlchemy 方言，如果不存在则忽略
 try:
@@ -142,10 +143,13 @@ class DatabaseService:
             engine = create_engine(uri, **engine_args)
 
             if db_type == "dameng":
+                normalized_dbname = normalize_dameng_schema_name(dbname)
+                quoted_dbname = quote_dameng_identifier(normalized_dbname)
+
                 @event.listens_for(engine, "connect")
                 def set_schema(dbapi_connection, connection_record):
                     cursor = dbapi_connection.cursor()
-                    cursor.execute(f'ALTER SESSION SET CURRENT_SCHEMA = "{dbname}"')
+                    cursor.execute(f"ALTER SESSION SET CURRENT_SCHEMA = {quoted_dbname}")
                     cursor.close()
 
             self._engine_cache[cache_key] = engine
