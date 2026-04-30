@@ -17,7 +17,12 @@ except ImportError:
     pass  # 达梦数据库支持可选
 from config import DatabaseConfig, DifyUploadConfig, LoggerConfig
 from service.dify_service import DifyUploader
-from utils import Logger, read_json
+from utils import (
+    Logger,
+    normalize_dameng_schema_name,
+    quote_dameng_identifier,
+    read_json,
+)
 
 
 class SchemaRAGBuilder:
@@ -53,13 +58,13 @@ class SchemaRAGBuilder:
 
         # 达梦数据库需要在每次连接建立时切换到正确的 schema
         if self.db_config.type == "dameng":
-            dbname = self.db_config.database
+            dbname = normalize_dameng_schema_name(self.db_config.database)
+            quoted_dbname = quote_dameng_identifier(dbname)
 
             @event.listens_for(self.engine, "connect")
             def set_dameng_schema(dbapi_connection, connection_record):
                 cursor = dbapi_connection.cursor()
-                # 达梦用双引号包裹 schema 名保持大小写
-                cursor.execute(f'ALTER SESSION SET CURRENT_SCHEMA = "{dbname}"')
+                cursor.execute(f"ALTER SESSION SET CURRENT_SCHEMA = {quoted_dbname}")
                 cursor.close()
 
         self.uploader: Optional[DifyUploader] = None
@@ -129,7 +134,7 @@ class SchemaRAGBuilder:
             self.logger.info("Schema引擎初始化成功")
         except Exception as e:
             self.logger.error(f"Schema引擎初始化失败: {e}")
-            raise RuntimeError("无法初始化Schema引擎，请检查数据库配置")
+            raise RuntimeError(f"无法初始化Schema引擎，请检查数据库配置: {e}") from e
         if self.dify_config:
             try:
                 self.uploader = DifyUploader(self.dify_config, self.logger)

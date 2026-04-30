@@ -7,7 +7,7 @@ from sqlalchemy import (
 
 from sqlalchemy.engine import Engine
 from core.m_schema.sql_database import SQLDatabase
-from utils import examples_to_str
+from utils import examples_to_str, normalize_dameng_schema_name
 from core.m_schema.m_schema import MSchema
 
 
@@ -33,7 +33,7 @@ class SchemaEngine(SQLDatabase):
         effective_schema = schema
         if effective_schema is None and db_name:
             if engine.dialect.name in ["dm", "dameng"]:
-                effective_schema = db_name.lower()
+                effective_schema = normalize_dameng_schema_name(db_name)
 
         super().__init__(
             engine,
@@ -65,16 +65,20 @@ class SchemaEngine(SQLDatabase):
                 # For SQL Server, use 'dbo' as default schema
                 effective_schema = "dbo"
             elif self._engine.dialect.name in ["dm", "dameng"]:
-                # 达梦的 db_name 对应 schema，Dameng 返回的 schema 名为小写
-                effective_schema = db_name.lower() if db_name else None
+                # 达梦的 db_name 对应 schema/owner，未加引号按达梦规则转大写
+                effective_schema = normalize_dameng_schema_name(db_name)
 
         # If a schema is specified, filter by that schema and store that value for every table.
         if effective_schema:
-            self._usable_tables = [
-                table_name
-                for table_name in self._usable_tables
-                if self._inspector.has_table(table_name, effective_schema)
-            ]
+            if self._engine.dialect.name in ["dm", "dameng"]:
+                # 达梦方言的 has_table 兼容性较弱，直接信任 inspector 返回的表名列表
+                self._usable_tables = list(self._usable_tables)
+            else:
+                self._usable_tables = [
+                    table_name
+                    for table_name in self._usable_tables
+                    if self._inspector.has_table(table_name, effective_schema)
+                ]
             for table_name in self._usable_tables:
                 self._tables_schemas[table_name] = effective_schema
         else:

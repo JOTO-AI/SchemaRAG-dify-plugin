@@ -50,6 +50,8 @@ Example workflow [download](https://github.com/JOTO-AI/SchemaRAG-dify-plugin/blo
 
 ## Supported Database Types
 
+DM Database (达梦)  [reference](docs/READEME_DM_INSTALL.md)
+
 | Database Type | Default Port | Driver | Connection String Format |
 |---------------|--------------|--------|--------------------------|
 | MySQL | 3306 | pymysql | `mysql+pymysql://user:password@host:port/database` |
