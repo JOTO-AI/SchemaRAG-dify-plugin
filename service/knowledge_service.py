@@ -246,7 +246,7 @@ class KnowledgeService:
         name="schema_cache",
         key_prefix="schema",
         ttl=3600,  # 1小时过期
-        key_generator=lambda self, dataset_id, query, top_k, retrieval_model: 
+        key_generator=lambda self, dataset_id, query, top_k=5, retrieval_model="semantic_search":
             create_cache_key_from_dict(
                 "schema",
                 {
