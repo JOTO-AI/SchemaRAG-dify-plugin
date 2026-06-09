@@ -7,7 +7,11 @@ from sqlalchemy import (
 
 from sqlalchemy.engine import Engine
 from core.m_schema.sql_database import SQLDatabase
-from utils import examples_to_str, normalize_dameng_schema_name
+from utils import (
+    examples_to_str,
+    normalize_dameng_schema_name,
+    normalize_oracle_schema_name,
+)
 from core.m_schema.m_schema import MSchema
 
 
@@ -34,6 +38,14 @@ class SchemaEngine(SQLDatabase):
         if effective_schema is None and db_name:
             if engine.dialect.name in ["dm", "dameng"]:
                 effective_schema = normalize_dameng_schema_name(db_name)
+            elif engine.dialect.name == "postgresql":
+                effective_schema = "public"
+            elif engine.dialect.name == "mssql":
+                effective_schema = "dbo"
+            elif engine.dialect.name == "oracle":
+                effective_schema = normalize_oracle_schema_name(engine.url.username)
+            elif engine.dialect.name in ["mysql", "doris"]:
+                effective_schema = db_name
 
         super().__init__(
             engine,
@@ -64,6 +76,11 @@ class SchemaEngine(SQLDatabase):
             elif self._engine.dialect.name == "mssql":
                 # For SQL Server, use 'dbo' as default schema
                 effective_schema = "dbo"
+            elif self._engine.dialect.name == "oracle":
+                # Oracle 默认使用登录用户作为 schema/owner，避免扫描所有系统 schema
+                effective_schema = normalize_oracle_schema_name(
+                    self._engine.url.username
+                )
             elif self._engine.dialect.name in ["dm", "dameng"]:
                 # 达梦的 db_name 对应 schema/owner，未加引号按达梦规则转大写
                 effective_schema = normalize_dameng_schema_name(db_name)

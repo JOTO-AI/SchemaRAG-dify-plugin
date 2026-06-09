@@ -20,6 +20,7 @@ from service.dify_service import DifyUploader
 from utils import (
     Logger,
     normalize_dameng_schema_name,
+    normalize_oracle_schema_name,
     quote_dameng_identifier,
     read_json,
 )
@@ -92,7 +93,16 @@ class SchemaRAGBuilder:
             # SQL Server (pymssql) 配置：charset 使用小写 utf8
             engine_args["connect_args"] = {"charset": "utf8"}
         elif db_type == "oracle":
+            # Oracle 默认 Thin 模式，按配置可切换 Thick 模式以兼容旧版本服务端
             engine_args["connect_args"] = {"thick_mode_dsn_passthrough": False}
+            if self.db_config.oracle_thick_mode:
+                oracle_client_lib_dir = (
+                    self.db_config.oracle_client_lib_dir or ""
+                ).strip()
+                if oracle_client_lib_dir:
+                    engine_args["thick_mode"] = {"lib_dir": oracle_client_lib_dir}
+                else:
+                    engine_args["thick_mode"] = True
         elif db_type == "dameng":
             # dmPython.connect() 不接受 encoding 参数，达梦 schema 切换由事件监听器处理
             pass
@@ -101,6 +111,31 @@ class SchemaRAGBuilder:
             pass
 
         return engine_args
+
+    def _resolve_schema_name(self) -> Optional[str]:
+        """根据数据库类型解析用于元数据抽取的 schema/owner。"""
+        configured_schema = (self.db_config.schema or "").strip()
+        db_type = self.db_config.type
+
+        if configured_schema:
+            if db_type == "oracle":
+                return normalize_oracle_schema_name(configured_schema)
+            if db_type == "dameng":
+                return normalize_dameng_schema_name(configured_schema)
+            return configured_schema
+
+        if db_type == "oracle":
+            return normalize_oracle_schema_name(self.db_config.user)
+        if db_type == "dameng":
+            return normalize_dameng_schema_name(self.db_config.database)
+        if db_type == "postgresql":
+            return "public"
+        if db_type == "mssql":
+            return "dbo"
+        if db_type in ["mysql", "doris"]:
+            return self.db_config.database
+
+        return None
 
     @staticmethod
     def from_config_file(
@@ -128,6 +163,7 @@ class SchemaRAGBuilder:
         try:
             self.schema_engine = SchemaEngine(
                 engine=self.engine,
+                schema=self._resolve_schema_name(),
                 db_name=self.db_config.database,
                 include_tables=self.include_tables,
             )

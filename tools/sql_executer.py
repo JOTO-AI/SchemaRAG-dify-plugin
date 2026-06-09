@@ -67,11 +67,27 @@ class SQLExecuterTool(Tool):
                 "db_user": credentials.get("db_user"),
                 "db_password": credentials.get("db_password"),
                 "db_name": credentials.get("db_name"),
+                "oracle_connect_type": credentials.get(
+                    "oracle_connect_type", "service_name"
+                ),
+                "oracle_thick_mode": str(
+                    credentials.get("oracle_thick_mode", "false")
+                ).lower()
+                in {"1", "true", "yes", "y", "on"},
+                "oracle_client_lib_dir": credentials.get("oracle_client_lib_dir"),
             }
             
             # 验证配置完整性
+            required_keys = [
+                "db_type",
+                "db_host",
+                "db_port",
+                "db_user",
+                "db_password",
+                "db_name",
+            ]
             self._config_validated = all(
-                value is not None for value in self._db_config.values()
+                self._db_config.get(key) is not None for key in required_keys
             )
 
         except Exception as e:
@@ -150,6 +166,9 @@ class SQLExecuterTool(Tool):
                 self._db_config["db_password"],
                 self._db_config["db_name"],
                 cleaned_sql,
+                self._db_config["oracle_connect_type"],
+                self._db_config["oracle_thick_mode"],
+                self._db_config["oracle_client_lib_dir"],
             )
 
             # 记录执行时间

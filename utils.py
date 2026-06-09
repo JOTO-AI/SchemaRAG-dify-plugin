@@ -115,6 +115,21 @@ def normalize_dameng_schema_name(schema_name: Optional[str]) -> Optional[str]:
     return normalized.upper()
 
 
+def normalize_oracle_schema_name(schema_name: Optional[str]) -> Optional[str]:
+    """规范化 Oracle schema/owner 名称，未加引号的标识符按 Oracle 规则转为大写。"""
+    if schema_name is None:
+        return None
+
+    normalized = str(schema_name).strip()
+    if not normalized:
+        return normalized
+
+    if len(normalized) >= 2 and normalized.startswith('"') and normalized.endswith('"'):
+        return normalized[1:-1].replace('""', '"')
+
+    return normalized.upper()
+
+
 def quote_dameng_identifier(identifier: str) -> str:
     """安全地为达梦标识符添加双引号。"""
     return f'"{identifier.replace("\"", "\"\"")}"'

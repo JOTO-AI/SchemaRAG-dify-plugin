@@ -145,6 +145,49 @@ class TestProviderCredentials(unittest.TestCase):
         self.assertIsInstance(created_configs[0].port, int)
         self.assertEqual(1522, created_configs[0].port)
 
+    def test_build_schema_passes_schema_and_oracle_options(self):
+        """Provider 将可选 schema 与 Oracle 连接参数传给数据库配置"""
+        created_configs = []
+
+        class FakeSchemaRAGBuilder:
+            def __init__(self, db_config, logger_config, dify_config, include_tables):
+                created_configs.append(db_config)
+
+            def generate_dictionary(self):
+                return "# users"
+
+            def upload_text_to_dify(self, dataset_name, schema_content):
+                pass
+
+            def close(self):
+                pass
+
+        credentials = VALID_CREDENTIALS | {
+            "db_type": "oracle",
+            "db_port": "1521",
+            "db_name": "ORCL",
+            "db_schema": "u_map",
+            "oracle_connect_type": "sid",
+            "oracle_thick_mode": "true",
+            "oracle_client_lib_dir": "/opt/oracle/instantclient_19_22",
+        }
+
+        with patch(
+            "provider.build_schema_rag.SchemaRAGBuilder",
+            FakeSchemaRAGBuilder,
+        ):
+            self.provider._build_schema_rag(credentials)
+
+        self.assertEqual(1, len(created_configs))
+        db_config = created_configs[0]
+        self.assertEqual("u_map", db_config.schema)
+        self.assertEqual("sid", db_config.oracle_connect_type)
+        self.assertTrue(db_config.oracle_thick_mode)
+        self.assertEqual(
+            "/opt/oracle/instantclient_19_22",
+            db_config.oracle_client_lib_dir,
+        )
+
     def test_invalid_text_port_raises_validation_error(self):
         """端口不是整数时抛出 Dify 凭据校验异常"""
         credentials = VALID_CREDENTIALS | {"db_port": "not-a-port"}

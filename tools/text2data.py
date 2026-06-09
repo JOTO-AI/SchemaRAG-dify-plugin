@@ -68,6 +68,13 @@ class Text2DataTool(Tool):
         self.db_user = credentials.get("db_user")
         self.db_password = credentials.get("db_password")
         self.db_name = credentials.get("db_name")
+        self.oracle_connect_type = credentials.get(
+            "oracle_connect_type", "service_name"
+        )
+        self.oracle_thick_mode = str(
+            credentials.get("oracle_thick_mode", "false")
+        ).lower() in {"1", "true", "yes", "y", "on"}
+        self.oracle_client_lib_dir = credentials.get("oracle_client_lib_dir")
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
@@ -229,8 +236,16 @@ class Text2DataTool(Tool):
             
             try:
                 results, columns = self.db_service.execute_query(
-                    self.db_type, self.db_host, self.db_port,
-                    self.db_user, self.db_password, self.db_name, sql_query
+                    self.db_type,
+                    self.db_host,
+                    self.db_port,
+                    self.db_user,
+                    self.db_password,
+                    self.db_name,
+                    sql_query,
+                    self.oracle_connect_type,
+                    self.oracle_thick_mode,
+                    self.oracle_client_lib_dir,
                 )
                 yield self.create_text_message(text=f"✅ 执行成功\n\n共返回 {len(results)} 行数据\n\n")
                 
@@ -258,7 +273,10 @@ class Text2DataTool(Tool):
                             'port': self.db_port,
                             'user': self.db_user,
                             'password': self.db_password,
-                            'dbname': self.db_name
+                            'dbname': self.db_name,
+                            'oracle_connect_type': self.oracle_connect_type,
+                            'oracle_thick_mode': self.oracle_thick_mode,
+                            'oracle_client_lib_dir': self.oracle_client_lib_dir,
                         }
                         
                         # 执行SQL修复
@@ -281,8 +299,16 @@ class Text2DataTool(Tool):
                             
                             # 使用修复后的SQL重新执行
                             results, columns = self.db_service.execute_query(
-                                self.db_type, self.db_host, self.db_port,
-                                self.db_user, self.db_password, self.db_name, refined_sql
+                                self.db_type,
+                                self.db_host,
+                                self.db_port,
+                                self.db_user,
+                                self.db_password,
+                                self.db_name,
+                                refined_sql,
+                                self.oracle_connect_type,
+                                self.oracle_thick_mode,
+                                self.oracle_client_lib_dir,
                             )
                             
                             # 更新sql_query为修复后的版本（用于后续日志）

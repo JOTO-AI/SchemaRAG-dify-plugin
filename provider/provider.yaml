@@ -140,6 +140,70 @@ credentials_for_provider:
       zh_Hans: 数据库名称
       pt_BR: Database name
 
+  db_schema:
+    type: text-input
+    required: false
+    label:
+      en_US: Database Schema
+      zh_Hans: 数据库 Schema
+      pt_BR: Database Schema
+    placeholder:
+      en_US: Optional schema/owner. Oracle defaults to user, PostgreSQL defaults to public, Dameng defaults to database name.
+      zh_Hans: 可选 schema/owner。Oracle 默认使用用户名，PostgreSQL 默认 public，达梦默认数据库名称。
+      pt_BR: Optional schema/owner. Oracle defaults to user, PostgreSQL defaults to public, Dameng defaults to database name.
+
+  oracle_connect_type:
+    type: select
+    required: false
+    label:
+      en_US: Oracle Connect Type
+      zh_Hans: Oracle 连接类型
+      pt_BR: Oracle Connect Type
+    default: service_name
+    options:
+      - value: service_name
+        label:
+          en_US: Service Name
+          zh_Hans: Service Name
+          pt_BR: Service Name
+      - value: sid
+        label:
+          en_US: SID
+          zh_Hans: SID
+          pt_BR: SID
+
+  oracle_thick_mode:
+    type: select
+    required: false
+    label:
+      en_US: Oracle Thick Mode
+      zh_Hans: Oracle Thick 模式
+      pt_BR: Oracle Thick Mode
+    default: "false"
+    options:
+      - value: "false"
+        label:
+          en_US: Disabled
+          zh_Hans: 关闭
+          pt_BR: Disabled
+      - value: "true"
+        label:
+          en_US: Enabled
+          zh_Hans: 开启
+          pt_BR: Enabled
+
+  oracle_client_lib_dir:
+    type: text-input
+    required: false
+    label:
+      en_US: Oracle Client Lib Dir
+      zh_Hans: Oracle Client 库目录
+      pt_BR: Oracle Client Lib Dir
+    placeholder:
+      en_US: Optional Instant Client library path for Oracle Thick mode.
+      zh_Hans: Oracle Thick 模式可选的 Instant Client 库路径。
+      pt_BR: Optional Instant Client library path for Oracle Thick mode.
+
 
   # build_rag:
   #   type: boolean

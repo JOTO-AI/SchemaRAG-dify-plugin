@@ -1,10 +1,11 @@
+import os
 import re
 from typing import Dict, List, Tuple, Optional
 import pandas as pd
 from sqlalchemy import create_engine, text, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, ProgrammingError
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
 from utils import normalize_dameng_schema_name, quote_dameng_identifier
 
 # 尝试导入达梦数据库驱动和 SQLAlchemy 方言，如果不存在则忽略
@@ -45,8 +46,39 @@ class DatabaseService:
         """初始化数据库服务"""
         self._engine_cache: Dict[str, Engine] = {}
 
+    def _is_oracle_thick_mode_enabled(
+        self, oracle_thick_mode: Optional[bool] = None
+    ) -> bool:
+        """判断是否启用 Oracle Thick 模式。"""
+        if oracle_thick_mode is not None:
+            return oracle_thick_mode
+        return os.environ.get("ORACLE_THICK_MODE", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+            "on",
+        }
+
+    def _get_oracle_client_lib_dir(
+        self, oracle_client_lib_dir: Optional[str] = None
+    ) -> Optional[str]:
+        """获取 Oracle Client 库路径。"""
+        value = oracle_client_lib_dir or os.environ.get("ORACLE_CLIENT_LIB_DIR")
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
+
     def _build_connection_uri(
-        self, db_type: str, host: str, port: int, user: str, password: str, dbname: str
+        self,
+        db_type: str,
+        host: str,
+        port: int,
+        user: str,
+        password: str,
+        dbname: str,
+        oracle_connect_type: str = "service_name",
     ) -> str:
         """
         构建 SQLAlchemy 数据库连接 URI
@@ -76,8 +108,14 @@ class DatabaseService:
 
         # 针对不同数据库类型构建 URI
         if db_type == "oracle":
-            # Oracle 使用 service_name
-            return f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/?service_name={dbname}"
+            connect_type = (oracle_connect_type or "service_name").strip().lower()
+            if connect_type == "sid":
+                sid = quote(str(dbname or ""), safe="")
+                return f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/{sid}"
+
+            # Oracle 默认使用 service_name
+            service_name = quote_plus(str(dbname or ""))
+            return f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/?service_name={service_name}"
         elif db_type == "dameng":
             # 达梦数据库特殊处理
             if not DAMENG_AVAILABLE:
@@ -94,7 +132,16 @@ class DatabaseService:
             )
 
     def _get_or_create_engine(
-        self, db_type: str, host: str, port: int, user: str, password: str, dbname: str
+        self,
+        db_type: str,
+        host: str,
+        port: int,
+        user: str,
+        password: str,
+        dbname: str,
+        oracle_connect_type: str = "service_name",
+        oracle_thick_mode: Optional[bool] = None,
+        oracle_client_lib_dir: Optional[str] = None,
     ) -> Engine:
         """
         获取或创建 SQLAlchemy 引擎（带缓存）
@@ -111,11 +158,18 @@ class DatabaseService:
             SQLAlchemy Engine 实例
         """
         # 创建缓存键（不包含密码以提高安全性）
-        cache_key = f"{db_type}://{user}@{host}:{port}/{dbname}"
+        thick_enabled = self._is_oracle_thick_mode_enabled(oracle_thick_mode)
+        client_lib_dir = self._get_oracle_client_lib_dir(oracle_client_lib_dir) or ""
+        cache_key = (
+            f"{db_type}://{user}@{host}:{port}/{dbname}"
+            f"?oracle_connect_type={oracle_connect_type}"
+            f"&oracle_thick_mode={thick_enabled}"
+            f"&oracle_client_lib_dir={client_lib_dir}"
+        )
 
         if cache_key not in self._engine_cache:
             uri = self._build_connection_uri(
-                db_type, host, port, user, password, dbname
+                db_type, host, port, user, password, dbname, oracle_connect_type
             )
 
             # 创建引擎配置
@@ -133,8 +187,13 @@ class DatabaseService:
                 # SQL Server (pymssql) 配置：charset 使用小写 utf8
                 engine_args["connect_args"] = {"charset": "utf8"}
             elif db_type == "oracle":
-                # Oracle 使用 thin 模式，需要在 connect_args 中配置
+                # Oracle 连接参数：默认 Thin 模式，按配置可切换 Thick 模式
                 engine_args["connect_args"] = {"thick_mode_dsn_passthrough": False}
+                if thick_enabled:
+                    if client_lib_dir:
+                        engine_args["thick_mode"] = {"lib_dir": client_lib_dir}
+                    else:
+                        engine_args["thick_mode"] = True
             elif db_type == "dameng":
                 # 达梦 dmPython.connect() 只接受 host/port/user/password，不接受 database/encoding
                 # dbname 对应达梦 schema，通过 SQLAlchemy 事件监听器在连接建立后执行切 schema
@@ -165,6 +224,9 @@ class DatabaseService:
         password: str,
         dbname: str,
         query: str,
+        oracle_connect_type: str = "service_name",
+        oracle_thick_mode: Optional[bool] = None,
+        oracle_client_lib_dir: Optional[str] = None,
     ) -> Tuple[List[Dict], List[str]]:
         """
         使用 SQLAlchemy 连接数据库并执行查询
@@ -198,7 +260,15 @@ class DatabaseService:
         try:
             # 获取或创建数据库引擎
             engine = self._get_or_create_engine(
-                db_type, host, port, user, password, dbname
+                db_type,
+                host,
+                port,
+                user,
+                password,
+                dbname,
+                oracle_connect_type,
+                oracle_thick_mode,
+                oracle_client_lib_dir,
             )
 
             # 使用连接上下文执行查询

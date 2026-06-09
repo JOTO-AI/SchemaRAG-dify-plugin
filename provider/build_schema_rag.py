@@ -50,6 +50,21 @@ class SchemaRAGBuilderProvider(ToolProvider):
         except (TypeError, ValueError) as exc:
             raise ValueError("Database port must be a valid integer") from exc
 
+    def _parse_bool_credential(self, value: Any, default: bool = False) -> bool:
+        """解析 Dify 凭据中的布尔值。"""
+        if value in (None, ""):
+            return default
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+    def _parse_optional_text_credential(self, value: Any) -> str | None:
+        """解析可选文本凭据，空字符串视为未配置。"""
+        if value in (None, ""):
+            return None
+        value = str(value).strip()
+        return value or None
+
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """
         Validate the credentials and build schema RAG
@@ -148,7 +163,21 @@ class SchemaRAGBuilderProvider(ToolProvider):
             # 创建数据库配置
             db_type = credentials.get("db_type")
             db_port = self._parse_db_port(credentials)
-
+            db_schema = self._parse_optional_text_credential(
+                credentials.get("db_schema")
+            )
+            oracle_connect_type = (
+                self._parse_optional_text_credential(
+                    credentials.get("oracle_connect_type")
+                )
+                or "service_name"
+            )
+            oracle_thick_mode = self._parse_bool_credential(
+                credentials.get("oracle_thick_mode")
+            )
+            oracle_client_lib_dir = self._parse_optional_text_credential(
+                credentials.get("oracle_client_lib_dir")
+            )
 
             if db_type == "doris":
                 db_config = DatabaseConfig(
@@ -158,6 +187,10 @@ class SchemaRAGBuilderProvider(ToolProvider):
                     user=credentials.get("db_user"),
                     password=credentials.get("db_password"),
                     database=credentials.get("db_name"),
+                    schema=db_schema,
+                    oracle_connect_type=oracle_connect_type,
+                    oracle_thick_mode=oracle_thick_mode,
+                    oracle_client_lib_dir=oracle_client_lib_dir,
                 )
             else:
                 db_config = DatabaseConfig(
@@ -167,6 +200,10 @@ class SchemaRAGBuilderProvider(ToolProvider):
                     user=credentials.get("db_user"),
                     password=credentials.get("db_password"),
                     database=credentials.get("db_name"),
+                    schema=db_schema,
+                    oracle_connect_type=oracle_connect_type,
+                    oracle_thick_mode=oracle_thick_mode,
+                    oracle_client_lib_dir=oracle_client_lib_dir,
                 )
 
             # 创建日志配置
