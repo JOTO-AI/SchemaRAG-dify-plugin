@@ -7,7 +7,9 @@ import json
 from unittest.mock import patch
 
 import pytest
+from sqlalchemy.exc import OperationalError
 
+from service.database_connection import DatabaseConnectionError
 from service.database_service import DatabaseService
 
 
@@ -127,6 +129,33 @@ def test_execute_query_rejects_empty_sql_after_cleanup():
     get_engine.assert_not_called()
 
 
+def test_execute_query_diagnoses_operational_connection_errors():
+    """执行查询时的连接类 OperationalError 应带阶段和处理建议。"""
+    service = DatabaseService()
+    error = OperationalError(
+        "SELECT 1",
+        {},
+        Exception("Access denied for user root"),
+    )
+
+    with patch.object(service, "_get_or_create_engine", side_effect=error):
+        with pytest.raises(DatabaseConnectionError) as context:
+            service.execute_query(
+                "mysql",
+                "db.example",
+                3306,
+                "root",
+                "password",
+                "app",
+                "SELECT 1",
+            )
+
+    message = str(context.value)
+    assert "SQL 执行连接失败" in message
+    assert "账号认证失败" in message
+    assert "password" not in message
+
+
 def test_build_connection_uri_encodes_user_and_password():
     """连接 URI 应 URL 编码用户名和密码中的特殊字符。"""
     service = DatabaseService()
@@ -156,6 +185,51 @@ def test_build_connection_uri_rejects_unsupported_database_type():
             "password",
             "app",
         )
+
+
+def test_build_connection_uri_uses_mysql_protocol_for_doris():
+    """Doris 通过 MySQL 协议连接，避免依赖不存在的 doris SQLAlchemy 方言。"""
+    uri = DatabaseService()._build_connection_uri(
+        "doris",
+        "doris.example",
+        9030,
+        "root",
+        "p@ss#word",
+        "warehouse",
+    )
+
+    assert uri == (
+        "mysql+pymysql://root:p%40ss%23word@doris.example:9030/warehouse"
+    )
+
+
+def test_get_or_create_engine_uses_reliable_pool_and_timeout_args():
+    """创建引擎时启用连接池健康检查、超时和敏感参数隐藏。"""
+    service = DatabaseService()
+    fake_engine = object()
+
+    with patch(
+        "service.database_service.create_engine",
+        return_value=fake_engine,
+    ) as create_engine:
+        engine = service._get_or_create_engine(
+            "mysql",
+            "db.example",
+            3306,
+            "root",
+            "password",
+            "app",
+        )
+
+    assert engine is fake_engine
+    engine_args = create_engine.call_args.kwargs
+    assert engine_args["pool_pre_ping"] is True
+    assert engine_args["pool_recycle"] == 3600
+    assert engine_args["pool_timeout"] == 30
+    assert engine_args["hide_parameters"] is True
+    assert engine_args["connect_args"]["connect_timeout"] == 10
+    assert engine_args["connect_args"]["read_timeout"] == 30
+    assert engine_args["connect_args"]["write_timeout"] == 30
 
 
 def test_format_output_json_markdown_and_unsupported_format():

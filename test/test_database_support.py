@@ -126,6 +126,23 @@ def test_oracle_connection_string_can_use_sid():
     )
 
 
+def test_doris_connection_string_uses_mysql_protocol():
+    """Doris 使用 MySQL 协议连接，避免依赖额外 doris 方言。"""
+    db_config = DatabaseConfig(
+        type="doris",
+        host="localhost",
+        port=9030,
+        user="root",
+        password="password",
+        database="warehouse",
+    )
+
+    assert (
+        db_config.get_connection_string()
+        == "mysql+pymysql://root:password@localhost:9030/warehouse"
+    )
+
+
 def test_schema_builder_oracle_thick_mode_engine_args():
     """Oracle Thick 模式通过 SQLAlchemy thick_mode 参数启用"""
     SchemaRAGBuilder = _load_schema_builder_class()
@@ -163,6 +180,22 @@ def test_schema_builder_oracle_defaults_schema_to_login_user():
     )
 
     assert builder._resolve_schema_name() == "U_MAP"
+
+
+def test_schema_builder_dameng_defaults_schema_to_database_name():
+    """达梦未显式配置 schema 时默认使用数据库名并按规则转大写。"""
+    SchemaRAGBuilder = _load_schema_builder_class()
+    builder = object.__new__(SchemaRAGBuilder)
+    builder.db_config = DatabaseConfig(
+        type="dameng",
+        host="localhost",
+        port=5236,
+        user="SYSDBA",
+        password="password",
+        database="app_schema",
+    )
+
+    assert builder._resolve_schema_name() == "APP_SCHEMA"
 
 
 def test_database_service_oracle_sid_connection_uri():

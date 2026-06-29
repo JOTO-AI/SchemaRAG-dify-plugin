@@ -7,13 +7,11 @@ from prompt import text2sql_prompt
 from service.knowledge_service import KnowledgeService
 from service.context import ContextManager
 from service.cache import CacheManager, normalize_query, create_cache_key_from_dict, CacheConfig
+from service.plugin_logging import get_plugin_logger
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 from tools.parameter_validator import validate_and_extract_text2sql_parameters
-
-# 导入 logging 和自定义处理器
-from dify_plugin.config.logger_format import plugin_logger_handler
 
 # 添加项目根目录到Python路径，以便导入service模块
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,8 +38,7 @@ class Text2SQLTool(Tool):
         self.dataset_api_key = self.runtime.credentials.get("dataset_api_key")
         self._knowledge_service = None
         self._config_validated = False
-        self.logger = logging.getLogger(__name__)
-        self.logger.addHandler(plugin_logger_handler)
+        self.logger = get_plugin_logger(__name__)
         
         # 初始化上下文管理器
         self._context_manager = ContextManager()
@@ -288,4 +285,3 @@ class Text2SQLTool(Tool):
         except Exception as e:
             self.logger.error(f"SQL生成异常: {str(e)}")
             raise ValueError(f"SQL生成异常: {str(e)}")
-

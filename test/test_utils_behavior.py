@@ -72,6 +72,8 @@ def test_format_single_value_handles_numeric_edge_cases():
     """数值格式化应避免科学计数法并保留特殊浮点值。"""
     assert format_single_value(10) == "10"
     assert format_single_value(10.0) == "10"
+    assert format_single_value(1234.56789) == "1234.56789"
+    assert format_single_value(1e-7) == "0.0000001"
     assert format_single_value(1234.567, decimal_places=2) == "1234.57"
     assert format_single_value(float("nan")) is None
     assert format_single_value(float("inf")) == "inf"
@@ -83,9 +85,9 @@ def test_format_numeric_values_formats_each_row_without_mutating_input():
     """批量数值格式化应返回新列表，保留非数值字段。"""
     rows = [{"id": 1, "amount": 12.345, "name": "Alice"}]
 
-    formatted = format_numeric_values(rows, decimal_places=1)
+    formatted = format_numeric_values(rows)
 
-    assert formatted == [{"id": "1", "amount": "12.3", "name": "Alice"}]
+    assert formatted == [{"id": "1", "amount": "12.345", "name": "Alice"}]
     assert rows == [{"id": 1, "amount": 12.345, "name": "Alice"}]
 
 

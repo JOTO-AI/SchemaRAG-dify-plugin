@@ -30,6 +30,7 @@ class SchemaEngine(SQLDatabase):
         max_string_length: int = 300,
         mschema: Optional[MSchema] = None,
         db_name: Optional[str] = "",
+        sample_values_in_table_info: int = 0,
     ):
         # Some dialects (notably Dameng) represent the "database name" as a schema/owner.
         # SQLDatabase must receive the effective schema up-front so inspector/metadata reflect
@@ -58,7 +59,9 @@ class SchemaEngine(SQLDatabase):
             custom_table_info,
             view_support,
             max_string_length,
+            reflect_metadata=False,
         )
+        self._sample_values_in_table_info = sample_values_in_table_info
 
         self._db_name = db_name
         # Dictionary to store table names and their corresponding schema
@@ -87,15 +90,8 @@ class SchemaEngine(SQLDatabase):
 
         # If a schema is specified, filter by that schema and store that value for every table.
         if effective_schema:
-            if self._engine.dialect.name in ["dm", "dameng"]:
-                # 达梦方言的 has_table 兼容性较弱，直接信任 inspector 返回的表名列表
-                self._usable_tables = list(self._usable_tables)
-            else:
-                self._usable_tables = [
-                    table_name
-                    for table_name in self._usable_tables
-                    if self._inspector.has_table(table_name, effective_schema)
-                ]
+            # get_table_names(schema=...) 已经按 schema 返回可见表，避免大库逐表 has_table 反查。
+            self._usable_tables = list(self._usable_tables)
             for table_name in self._usable_tables:
                 self._tables_schemas[table_name] = effective_schema
         else:
@@ -222,10 +218,16 @@ class SchemaEngine(SQLDatabase):
                 if default is not None:
                     default = f"{default}"
 
-                try:
-                    examples = self.fectch_distinct_values(table_name, field_name, 5)
-                except Exception:
-                    examples = []
+                examples = []
+                if self._sample_values_in_table_info > 0:
+                    try:
+                        examples = self.fectch_distinct_values(
+                            table_name,
+                            field_name,
+                            self._sample_values_in_table_info,
+                        )
+                    except Exception:
+                        examples = []
                 examples = examples_to_str(examples)
 
                 self._mschema.add_field(

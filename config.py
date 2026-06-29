@@ -58,13 +58,14 @@ class DatabaseConfig:
         # 对用户名和密码进行 URL 编码，处理特殊字符（如 @, #, $ 等）
         encoded_user = quote_plus(self.user)
         encoded_password = quote_plus(self.password)
+        encoded_database = quote(str(self.database or ""), safe="")
         
         if self.type == "postgresql":
-            return f"postgresql+psycopg2://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"postgresql+psycopg2://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         elif self.type == "mysql":
-            return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         elif self.type == "mssql":
-            return f"mssql+pymssql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"mssql+pymssql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         elif self.type == "oracle":
             connect_type = (self.oracle_connect_type or "service_name").strip().lower()
             if connect_type == "sid":
@@ -78,7 +79,8 @@ class DatabaseConfig:
             # 达梦 dmPython.connect() 不接受 database 参数，URI 中不能带 /{database}
             return f"dm+dmPython://{encoded_user}:{encoded_password}@{self.host}:{self.port}"
         elif self.type == "doris":
-            return f"doris+mysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            # Apache Doris 兼容 MySQL 协议，使用 SQLAlchemy 内置 MySQL 方言连接。
+            return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         else:
             raise ValueError(f"Unsupported database type: {self.type}")
 

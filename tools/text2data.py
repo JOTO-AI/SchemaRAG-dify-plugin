@@ -3,15 +3,14 @@ from typing import Any, Optional, List, Dict
 import sys
 import os
 import re
-import logging
 from prompt import text2sql_prompt, summary_prompt
 from service.knowledge_service import KnowledgeService
 from service.database_service import DatabaseService
 from service.sql_refiner import SQLRefiner
+from service.plugin_logging import get_plugin_logger
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
-from dify_plugin.config.logger_format import plugin_logger_handler
 
 from utils import (
     _clean_and_validate_sql,
@@ -52,8 +51,7 @@ class Text2DataTool(Tool):
         self.api_uri = self.runtime.credentials.get("api_uri")
         self.dataset_api_key = self.runtime.credentials.get("dataset_api_key")
         self.knowledge_service = KnowledgeService(self.api_uri, self.dataset_api_key)
-        self.logger = logging.getLogger(__name__)
-        self.logger.addHandler(plugin_logger_handler)
+        self.logger = get_plugin_logger(__name__)
 
         # 初始化数据库服务
         self.db_service = DatabaseService()

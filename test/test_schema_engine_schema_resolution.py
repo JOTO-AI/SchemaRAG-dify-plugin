@@ -94,7 +94,8 @@ class TestSchemaEngineSchemaResolution(unittest.TestCase):
         )
 
         self.assertEqual(["U_MAP"], inspector.table_name_schema_calls)
-        self.assertEqual("U_MAP", metadata.reflect_calls[0]["schema"])
+        self.assertEqual([], metadata.reflect_calls)
+        self.assertEqual([], inspector.has_table_calls)
         self.assertEqual({"T_USER": "U_MAP"}, schema_engine._tables_schemas)
 
     def test_postgresql_defaults_to_public_before_reflection(self):
@@ -106,7 +107,8 @@ class TestSchemaEngineSchemaResolution(unittest.TestCase):
         )
 
         self.assertEqual(["public"], inspector.table_name_schema_calls)
-        self.assertEqual("public", metadata.reflect_calls[0]["schema"])
+        self.assertEqual([], metadata.reflect_calls)
+        self.assertEqual([], inspector.has_table_calls)
         self.assertEqual({"T_USER": "public"}, schema_engine._tables_schemas)
 
     def test_dameng_defaults_to_normalized_database_owner_before_reflection(self):
@@ -118,7 +120,8 @@ class TestSchemaEngineSchemaResolution(unittest.TestCase):
         )
 
         self.assertEqual(["DM_APP"], inspector.table_name_schema_calls)
-        self.assertEqual("DM_APP", metadata.reflect_calls[0]["schema"])
+        self.assertEqual([], metadata.reflect_calls)
+        self.assertEqual([], inspector.has_table_calls)
         self.assertEqual({"T_USER": "DM_APP"}, schema_engine._tables_schemas)
 
     def test_configured_oracle_schema_is_respected(self):
@@ -132,8 +135,48 @@ class TestSchemaEngineSchemaResolution(unittest.TestCase):
         )
 
         self.assertEqual(["REPORTING"], inspector.table_name_schema_calls)
-        self.assertEqual("REPORTING", metadata.reflect_calls[0]["schema"])
+        self.assertEqual([], metadata.reflect_calls)
+        self.assertEqual([], inspector.has_table_calls)
         self.assertEqual({"T_USER": "REPORTING"}, schema_engine._tables_schemas)
+
+    def test_schema_engine_does_not_sample_data_values_by_default(self):
+        """默认只抽取元数据，避免保存配置时扫描大表业务数据。"""
+        inspector = FakeInspector("app")
+        engine = FakeEngine(dialect_name="mysql", username="root")
+        metadata = FakeMetadata()
+
+        inspector.get_table_comment = lambda table_name, schema=None: {"text": ""}
+        inspector.get_pk_constraint = lambda table_name, schema=None: {
+            "constrained_columns": ["id"]
+        }
+        inspector.get_foreign_keys = lambda table_name, schema=None: []
+        inspector.get_columns = lambda table_name, schema=None: [
+            {
+                "name": "id",
+                "type": "INTEGER",
+                "nullable": False,
+                "comment": "",
+            }
+        ]
+
+        with patch("core.m_schema.sql_database.inspect", return_value=inspector):
+            with patch.object(
+                SchemaEngine,
+                "fectch_distinct_values",
+                side_effect=AssertionError("不应默认扫描字段样例值"),
+            ):
+                schema_engine = SchemaEngine(
+                    engine=engine,
+                    schema="app",
+                    metadata=metadata,
+                    db_name="app",
+                )
+
+        self.assertEqual([], metadata.reflect_calls)
+        self.assertEqual(
+            [],
+            schema_engine.mschema.tables["T_USER"]["fields"]["id"]["examples"],
+        )
 
 
 if __name__ == "__main__":

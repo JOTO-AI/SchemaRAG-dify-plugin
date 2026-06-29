@@ -117,7 +117,14 @@ class TestProviderCredentials(unittest.TestCase):
         created_configs = []
 
         class FakeSchemaRAGBuilder:
-            def __init__(self, db_config, logger_config, dify_config, include_tables):
+            def __init__(
+                self,
+                db_config,
+                logger_config,
+                dify_config,
+                include_tables,
+                logger=None,
+            ):
                 created_configs.append(db_config)
 
             def generate_dictionary(self):
@@ -150,7 +157,14 @@ class TestProviderCredentials(unittest.TestCase):
         created_configs = []
 
         class FakeSchemaRAGBuilder:
-            def __init__(self, db_config, logger_config, dify_config, include_tables):
+            def __init__(
+                self,
+                db_config,
+                logger_config,
+                dify_config,
+                include_tables,
+                logger=None,
+            ):
                 created_configs.append(db_config)
 
             def generate_dictionary(self):

@@ -3,7 +3,6 @@ import os
 from collections.abc import Generator
 from typing import Any, Dict, List, Optional
 import re
-import logging
 from urllib.parse import urlparse
 
 from utils import (
@@ -21,7 +20,7 @@ sys.path.append(
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from service.database_service import DatabaseService
-from dify_plugin.config.logger_format import plugin_logger_handler
+from service.plugin_logging import get_plugin_logger
 from tools.parameter_validator import validate_and_extract_sql_executer_parameters
 
 
@@ -50,8 +49,7 @@ class SQLExecuterTool(Tool):
         self._db_service = None
         self._db_config = None
         self._config_validated = False
-        self.logger = logging.getLogger(__name__)
-        self.logger.addHandler(plugin_logger_handler)
+        self.logger = get_plugin_logger(__name__)
 
     @property
     def db_service(self):

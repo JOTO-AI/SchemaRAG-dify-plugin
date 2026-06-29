@@ -2,22 +2,18 @@ import os
 import re
 from typing import Dict, List, Tuple, Optional
 import pandas as pd
-from sqlalchemy import create_engine, text, event
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError, OperationalError, ProgrammingError
-from urllib.parse import quote, quote_plus
-from utils import normalize_dameng_schema_name, quote_dameng_identifier
-
-# 尝试导入达梦数据库驱动和 SQLAlchemy 方言，如果不存在则忽略
-try:
-    import dmPython
-    # 导入 dmSQLAlchemy 以注册 SQLAlchemy 方言
-    # dmSQLAlchemy 会自动注册 'dm' 方言到 SQLAlchemy
-    import dmSQLAlchemy
-
-    DAMENG_AVAILABLE = True
-except ImportError:
-    DAMENG_AVAILABLE = False
+from service.database_connection import (
+    DB_DRIVERS as DATABASE_DRIVERS,
+    DatabaseConnectionError,
+    attach_dameng_schema_listener,
+    build_connection_uri,
+    build_engine_args,
+    diagnose_database_exception,
+    format_connection_target,
+)
 
 
 class DatabaseService:
@@ -33,14 +29,7 @@ class DatabaseService:
     """
 
     # 数据库驱动映射
-    DB_DRIVERS = {
-        "mysql": "mysql+pymysql",
-        "postgresql": "postgresql+psycopg2",
-        "mssql": "mssql+pymssql",
-        "oracle": "oracle+oracledb",
-        "dameng": "dm+dmPython",  # 达梦数据库
-        "doris": "doris+pymysql",  # Apache Doris (使用 MySQL 协议)
-    }
+    DB_DRIVERS = DATABASE_DRIVERS
 
     def __init__(self):
         """初始化数据库服务"""
@@ -97,39 +86,15 @@ class DatabaseService:
         Raises:
             ValueError: 不支持的数据库类型
         """
-        if db_type not in self.DB_DRIVERS:
-            raise ValueError(f"Unsupported database type: {db_type}")
-
-        # 对密码进行 URL 编码，处理特殊字符
-        encoded_password = quote_plus(password)
-        encoded_user = quote_plus(user)
-
-        driver = self.DB_DRIVERS[db_type]
-
-        # 针对不同数据库类型构建 URI
-        if db_type == "oracle":
-            connect_type = (oracle_connect_type or "service_name").strip().lower()
-            if connect_type == "sid":
-                sid = quote(str(dbname or ""), safe="")
-                return f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/{sid}"
-
-            # Oracle 默认使用 service_name
-            service_name = quote_plus(str(dbname or ""))
-            return f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/?service_name={service_name}"
-        elif db_type == "dameng":
-            # 达梦数据库特殊处理
-            if not DAMENG_AVAILABLE:
-                raise ValueError(
-                    "DamengDB support requires dmPython package to be installed"
-                )
-            # 达梦 dmPython.connect() 不接受 'database' 参数，不能在 URI 路径里带 dbname
-            # dbname 会作为 connect_args 单独传入（在 _get_or_create_engine 里处理）
-            return f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}"
-        else:
-            # MySQL, PostgreSQL, MSSQL, Doris 使用标准格式
-            return (
-                f"{driver}://{encoded_user}:{encoded_password}@{host}:{port}/{dbname}"
-            )
+        return build_connection_uri(
+            db_type,
+            host,
+            port,
+            user,
+            password,
+            dbname,
+            oracle_connect_type,
+        )
 
     def _get_or_create_engine(
         self,
@@ -172,44 +137,16 @@ class DatabaseService:
                 db_type, host, port, user, password, dbname, oracle_connect_type
             )
 
-            # 创建引擎配置
-            engine_args = {
-                "pool_pre_ping": True,  # 连接池健康检查
-                "pool_recycle": 3600,  # 连接回收时间（秒）
-                "echo": False,  # 不输出 SQL 日志
-            }
-
-            # 针对特定数据库的额外配置
-            if db_type == "mysql" or db_type == "doris":
-                # MySQL 和 Doris 使用相同的字符集配置
-                engine_args["connect_args"] = {"charset": "utf8mb4"}
-            elif db_type == "mssql":
-                # SQL Server (pymssql) 配置：charset 使用小写 utf8
-                engine_args["connect_args"] = {"charset": "utf8"}
-            elif db_type == "oracle":
-                # Oracle 连接参数：默认 Thin 模式，按配置可切换 Thick 模式
-                engine_args["connect_args"] = {"thick_mode_dsn_passthrough": False}
-                if thick_enabled:
-                    if client_lib_dir:
-                        engine_args["thick_mode"] = {"lib_dir": client_lib_dir}
-                    else:
-                        engine_args["thick_mode"] = True
-            elif db_type == "dameng":
-                # 达梦 dmPython.connect() 只接受 host/port/user/password，不接受 database/encoding
-                # dbname 对应达梦 schema，通过 SQLAlchemy 事件监听器在连接建立后执行切 schema
-                pass
+            engine_args = build_engine_args(
+                db_type,
+                oracle_thick_mode=thick_enabled,
+                oracle_client_lib_dir=client_lib_dir,
+            )
 
             engine = create_engine(uri, **engine_args)
 
             if db_type == "dameng":
-                normalized_dbname = normalize_dameng_schema_name(dbname)
-                quoted_dbname = quote_dameng_identifier(normalized_dbname)
-
-                @event.listens_for(engine, "connect")
-                def set_schema(dbapi_connection, connection_record):
-                    cursor = dbapi_connection.cursor()
-                    cursor.execute(f"ALTER SESSION SET CURRENT_SCHEMA = {quoted_dbname}")
-                    cursor.close()
+                attach_dameng_schema_listener(engine, dbname)
 
             self._engine_cache[cache_key] = engine
 
@@ -257,6 +194,15 @@ class DatabaseService:
         if not cleaned_sql:
             raise ValueError("SQL query cannot be empty.")
 
+        target = format_connection_target(
+            db_type,
+            host,
+            port,
+            user,
+            dbname,
+            oracle_connect_type=oracle_connect_type,
+        )
+
         try:
             # 获取或创建数据库引擎
             engine = self._get_or_create_engine(
@@ -294,9 +240,28 @@ class DatabaseService:
                         "result"
                     ]
 
-        except (OperationalError, ProgrammingError) as e:
-            # 数据库操作错误或 SQL 语法错误
+        except OperationalError as e:
+            # 连接、认证、库名等运行时配置问题需要保留诊断阶段
+            raise diagnose_database_exception(
+                "SQL 执行连接",
+                db_type,
+                e,
+                target=target,
+                secrets=[password],
+            ) from e
+        except ProgrammingError as e:
+            # SQL 语法/对象错误保留为数据库操作错误，便于 SQL Refiner 使用
             raise SQLAlchemyError(f"Database operation failed: {str(e)}") from e
+        except DatabaseConnectionError:
+            raise
+        except ValueError as e:
+            raise diagnose_database_exception(
+                "SQL 执行连接初始化",
+                db_type,
+                e,
+                target=target,
+                secrets=[password],
+            ) from e
         except SQLAlchemyError as e:
             # 其他 SQLAlchemy 错误
             raise SQLAlchemyError(f"SQLAlchemy error: {str(e)}") from e
