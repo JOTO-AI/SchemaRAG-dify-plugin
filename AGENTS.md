@@ -7,7 +7,7 @@ This file is the operating guide for AI agents working in this repository. Follo
 SchemaRAG is a **Dify tool provider plugin** that automates database schema extraction, uploads schema dictionaries to Dify Knowledge Bases, and provides natural-language-to-SQL tools for Dify Chatflow / Workflow / Agent applications.
 
 - **Type:** Dify Tool Provider Plugin
-- **Version:** 0.1.7
+- **Version:** 0.1.8
 - **Runtime:** Python 3.12+ in Dify plugin runner
 - **License:** Apache-2.0
 - **Author:** joto (JOTO-AI)

@@ -4,7 +4,7 @@
 ### 打包
 ```shell
 # 打包命令
-rm -f schemarag-0.1.7.difypkg && docker run --rm --platform linux/amd64 -v "$PWD:/work" -w /work schemarag-pack plugin package . -o "schemarag-$(grep '^version:' manifest.yaml | head -1 | cut -d' ' -f2).difypkg
+rm -f schemarag-0.1.8.difypkg && docker run --rm --platform linux/amd64 -v "$PWD:/work" -w /work schemarag-pack plugin package . -o "schemarag-$(grep '^version:' manifest.yaml | head -1 | cut -d' ' -f2).difypkg
 
 ```
 ```shell
@@ -107,7 +107,7 @@ ls -lah /opt/dm8/source/drivers/python
 # 第一次报错不要紧 "$VENV_PY" -c "import sys; print(sys.version, sys.executable)" 是这里测试环境的时候
 # 生产环境 Shell 脚本必备，能避免 90% 的隐形 bug
 set -euo pipefail
-VENV_PY=/app/storage/cwd/joto/schemarag-0.1.7@b1d24ddfccc76c0054ff50ada5fe93f54e1cc5ddd3a46fbe0bfd48c346eb3777/.venv/bin/python
+VENV_PY=/app/storage/cwd/joto/schemarag-0.1.8@b1d24ddfccc76c0054ff50ada5fe93f54e1cc5ddd3a46fbe0bfd48c346eb3777/.venv/bin/python
 export DM_HOME=/opt/dm8/source
 export LD_LIBRARY_PATH=/opt/dm8/source/bin:${LD_LIBRARY_PATH:-}
 export PATH=/opt/dm8/source/bin:${PATH}
@@ -135,14 +135,14 @@ cd /opt/dm8/source/drivers/python/dmSQLAlchemy/dmSQLAlchemy2.0
 
 # 测试启动（可以忽略）
 
-cd /app/storage/cwd/joto/schemarag-0.1.7@b1d24ddfccc76c0054ff50ada5fe93f54e1cc5ddd3a46fbe0bfd48c346eb3777
+cd /app/storage/cwd/joto/schemarag-0.1.8@b1d24ddfccc76c0054ff50ada5fe93f54e1cc5ddd3a46fbe0bfd48c346eb3777
 "$VENV_PY" -m main
 ```
 
 ```java
 # 测试连接（可以忽略）
 
-VENV_PY=/app/storage/cwd/joto/schemarag-0.1.7@b1d24ddfccc76c0054ff50ada5fe93f54e1cc5ddd3a46fbe0bfd48c346eb3777/.venv/bin/python
+VENV_PY=/app/storage/cwd/joto/schemarag-0.1.8@b1d24ddfccc76c0054ff50ada5fe93f54e1cc5ddd3a46fbe0bfd48c346eb3777/.venv/bin/python
 "$VENV_PY" - <<'PY'
 from sqlalchemy import create_engine, text
 import dmSQLAlchemy

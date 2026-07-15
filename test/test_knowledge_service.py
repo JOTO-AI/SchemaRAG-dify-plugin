@@ -22,11 +22,51 @@ def _response(status_code=200, body=None):
     response = Mock()
     response.status_code = status_code
     response.json.return_value = body or {}
+    response.text = ""
     return response
 
 
 def _service():
     return KnowledgeService("http://dify.example/v1/", "dataset-key")
+
+
+def test_request_ignores_environment_proxies():
+    """知识库检索请求不读取环境代理配置，避免内网 Dify API 误走代理。"""
+    response = _response()
+    client_instance = Mock()
+    client_instance.request.return_value = response
+    client_context = Mock()
+    client_context.__enter__ = Mock(return_value=client_instance)
+    client_context.__exit__ = Mock(return_value=None)
+
+    with patch("service.knowledge_service.httpx.Client", return_value=client_context) as client:
+        result = _service()._request("GET", "http://dify.example/v1/datasets")
+
+    assert result is response
+    client.assert_called_once_with(timeout=30.0, trust_env=False)
+    client_instance.request.assert_called_once_with(
+        "GET",
+        "http://dify.example/v1/datasets",
+        headers={
+            "Authorization": "Bearer dataset-key",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def _dataset_retrieval_response(search_method="semantic_search", **overrides):
+    retrieval_model = {
+        "search_method": search_method,
+        "reranking_enable": False,
+        "reranking_model": {
+            "reranking_provider_name": "",
+            "reranking_model_name": "",
+        },
+        "top_k": 2,
+        "score_threshold_enabled": False,
+    }
+    retrieval_model.update(overrides)
+    return _response(body={"retrieval_model_dict": retrieval_model})
 
 
 def test_retrieve_schema_from_dataset_posts_expected_payload_and_joins_segments():
@@ -42,8 +82,13 @@ def test_retrieve_schema_from_dataset_posts_expected_payload_and_joins_segments(
         }
     )
 
-    with patch("service.knowledge_service.requests.post", return_value=response) as post:
-        content = _service().retrieve_schema_from_dataset(
+    service = _service()
+    with patch.object(
+        service,
+        "_request",
+        side_effect=[_dataset_retrieval_response(), response],
+    ) as request:
+        content = service.retrieve_schema_from_dataset(
             "dataset-1",
             "用户表",
             top_k=3,
@@ -51,24 +96,69 @@ def test_retrieve_schema_from_dataset_posts_expected_payload_and_joins_segments(
         )
 
     assert content == "table users\\n\\ntable orders"
-    post.assert_called_once()
-    url = post.call_args.args[0]
-    headers = post.call_args.kwargs["headers"]
-    payload = post.call_args.kwargs["json"]
+    assert request.call_count == 2
+    assert request.call_args_list[0].args == (
+        "GET",
+        "http://dify.example/v1/datasets/dataset-1",
+    )
+    url = request.call_args_list[1].args[1]
+    payload = request.call_args_list[1].kwargs["json"]
     assert url == "http://dify.example/v1/datasets/dataset-1/retrieve"
-    assert headers["Authorization"] == "Bearer dataset-key"
     assert payload["query"] == "用户表"
     assert payload["retrieval_model"]["top_k"] == 3
     assert payload["retrieval_model"]["search_method"] == "hybrid_search"
+
+
+def test_retrieve_schema_from_dataset_keeps_dataset_retrieval_config_by_default():
+    """默认检索方式应沿用 Dify 知识库自身配置，只覆盖 top_k。"""
+    service = _service()
+    dataset_response = _dataset_retrieval_response(
+        search_method="full_text_search",
+        reranking_enable=True,
+        reranking_mode="weighted_score",
+        weights={
+            "weight_type": "customized",
+            "vector_setting": {
+                "vector_weight": 0.3,
+                "embedding_provider_name": "openai",
+                "embedding_model_name": "text-embedding-3-small",
+            },
+            "keyword_setting": {"keyword_weight": 0.7},
+        },
+        score_threshold_enabled=True,
+        score_threshold=0.2,
+    )
+    retrieve_response = _response(body={"records": []})
+
+    with patch.object(
+        service,
+        "_request",
+        side_effect=[dataset_response, retrieve_response],
+    ) as request:
+        service.retrieve_schema_from_dataset(
+            "dataset-1",
+            "用户表",
+            top_k=6,
+            retrieval_model="semantic_search",
+        )
+
+    payload = request.call_args_list[1].kwargs["json"]
+    model = payload["retrieval_model"]
+    assert model["search_method"] == "full_text_search"
+    assert model["top_k"] == 6
+    assert model["reranking_mode"] == "weighted_score"
+    assert model["weights"]["keyword_setting"]["keyword_weight"] == 0.7
+    assert model["score_threshold"] == 0.2
 
 
 def test_retrieve_schema_from_dataset_falls_back_when_retrieve_api_fails():
     """主检索 API 非 200 时应进入文档片段 fallback。"""
     service = _service()
 
-    with patch(
-        "service.knowledge_service.requests.post",
-        return_value=_response(status_code=500),
+    with patch.object(
+        service,
+        "_request",
+        side_effect=[_dataset_retrieval_response(), _response(status_code=500)],
     ), patch.object(
         service,
         "_fallback_retrieve_documents",
@@ -84,14 +174,18 @@ def test_retrieve_schema_from_dataset_uses_cache_for_identical_queries():
     """相同检索参数应命中缓存，避免重复 HTTP 调用。"""
     response = _response(body={"records": [{"segment": {"content": "schema"}}]})
 
-    with patch("service.knowledge_service.requests.post", return_value=response) as post:
-        service = _service()
+    service = _service()
+    with patch.object(
+        service,
+        "_request",
+        side_effect=[_dataset_retrieval_response(), response],
+    ) as request:
         first = service.retrieve_schema_from_dataset("dataset-1", "  查询 用户 ")
         second = service.retrieve_schema_from_dataset("dataset-1", "查询 用户")
 
     assert first == "schema"
     assert second == "schema"
-    post.assert_called_once()
+    assert request.call_count == 2
 
 
 def test_fallback_retrieve_documents_limits_documents_and_collects_segments():
@@ -109,10 +203,11 @@ def test_fallback_retrieve_documents_limits_documents_and_collects_segments():
         }
     )
 
-    with patch(
-        "service.knowledge_service.requests.get",
+    with patch.object(
+        service,
+        "_request",
         return_value=documents_response,
-    ) as get, patch.object(
+    ) as request, patch.object(
         service,
         "_get_document_segments",
         side_effect=[["a", "b"], [], ["c"]],
@@ -120,13 +215,9 @@ def test_fallback_retrieve_documents_limits_documents_and_collects_segments():
         content = service._fallback_retrieve_documents("dataset-1")
 
     assert content == "a\\n\\nb\\n\\nc"
-    get.assert_called_once_with(
+    request.assert_called_once_with(
+        "GET",
         "http://dify.example/v1/datasets/dataset-1/documents",
-        headers={
-            "Authorization": "Bearer dataset-key",
-            "Content-Type": "application/json",
-        },
-        timeout=30,
     )
     assert get_segments.call_count == 3
 
@@ -147,10 +238,15 @@ def test_get_document_segments_limits_to_first_five_nonempty_segments():
         }
     )
 
-    with patch("service.knowledge_service.requests.get", return_value=response):
-        segments = _service()._get_document_segments("dataset-1", "doc-1")
+    service = _service()
+    with patch.object(service, "_request", return_value=response) as request:
+        segments = service._get_document_segments("dataset-1", "doc-1")
 
     assert segments == ["s1", "s2", "s3", "s4"]
+    request.assert_called_once_with(
+        "GET",
+        "http://dify.example/v1/datasets/dataset-1/documents/doc-1/segments",
+    )
 
 
 def test_retrieve_schema_from_multiple_datasets_delegates_single_dataset():
@@ -217,8 +313,9 @@ def test_dataset_info_and_list_datasets_parse_success_and_failure_responses():
     """数据集信息和列表接口应在成功时解析 JSON，失败时返回空值。"""
     service = _service()
 
-    with patch(
-        "service.knowledge_service.requests.get",
+    with patch.object(
+        service,
+        "_request",
         side_effect=[
             _response(body={"id": "dataset-1"}),
             _response(status_code=404),
