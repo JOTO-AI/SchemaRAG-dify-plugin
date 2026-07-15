@@ -1,8 +1,6 @@
 import os
 from typing import Any
 import sys
-import logging
-from venv import logger
 
 
 sys.path.append(
@@ -14,8 +12,12 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from tools.text2sql import Text2SQLTool
 from tools.sql_executer import SQLExecuterTool
 from config import DatabaseConfig, LoggerConfig, DifyUploadConfig
+from service.database_connection import DatabaseConnectionError
+from service.plugin_logging import get_plugin_logger
 from service.schema_builder import SchemaRAGBuilder
-from dify_plugin.config.logger_format import plugin_logger_handler
+
+
+logger = get_plugin_logger(__name__)
 
 
 class SchemaRAGBuilderProvider(ToolProvider):
@@ -49,6 +51,21 @@ class SchemaRAGBuilderProvider(ToolProvider):
             return int(db_port)
         except (TypeError, ValueError) as exc:
             raise ValueError("Database port must be a valid integer") from exc
+
+    def _parse_bool_credential(self, value: Any, default: bool = False) -> bool:
+        """解析 Dify 凭据中的布尔值。"""
+        if value in (None, ""):
+            return default
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+    def _parse_optional_text_credential(self, value: Any) -> str | None:
+        """解析可选文本凭据，空字符串视为未配置。"""
+        if value in (None, ""):
+            return None
+        value = str(value).strip()
+        return value or None
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """
@@ -136,47 +153,50 @@ class SchemaRAGBuilderProvider(ToolProvider):
         except ToolProviderCredentialValidationError:
             raise
         except Exception as e:
-            logging.error(f"❌ Provider凭据校验失败: {e}")
+            logger.error(f"❌ Provider凭据校验失败: {e}")
             raise ToolProviderCredentialValidationError(str(e)) from e
 
     def _build_schema_rag(self, credentials: dict[str, Any]) -> None:
         """
         Build schema RAG using the provided credentials
         """
+        builder = None
         try:
 
             # 创建数据库配置
             db_type = credentials.get("db_type")
             db_port = self._parse_db_port(credentials)
-
-
-            if db_type == "doris":
-                db_config = DatabaseConfig(
-                    type=db_type,
-                    host=credentials.get("db_host"),
-                    port=db_port,
-                    user=credentials.get("db_user"),
-                    password=credentials.get("db_password"),
-                    database=credentials.get("db_name"),
+            db_schema = self._parse_optional_text_credential(
+                credentials.get("db_schema")
+            )
+            oracle_connect_type = (
+                self._parse_optional_text_credential(
+                    credentials.get("oracle_connect_type")
                 )
-            else:
-                db_config = DatabaseConfig(
-                    type=db_type,
-                    host=credentials.get("db_host"),
-                    port=db_port,
-                    user=credentials.get("db_user"),
-                    password=credentials.get("db_password"),
-                    database=credentials.get("db_name"),
-                )
+                or "service_name"
+            )
+            oracle_thick_mode = self._parse_bool_credential(
+                credentials.get("oracle_thick_mode")
+            )
+            oracle_client_lib_dir = self._parse_optional_text_credential(
+                credentials.get("oracle_client_lib_dir")
+            )
+
+            db_config = DatabaseConfig(
+                type=db_type,
+                host=credentials.get("db_host"),
+                port=db_port,
+                user=credentials.get("db_user"),
+                password=credentials.get("db_password"),
+                database=credentials.get("db_name"),
+                schema=db_schema,
+                oracle_connect_type=oracle_connect_type,
+                oracle_thick_mode=oracle_thick_mode,
+                oracle_client_lib_dir=oracle_client_lib_dir,
+            )
 
             # 创建日志配置
-            logger_config = LoggerConfig(
-                log_level="INFO"
-            )
-            logger = logging.getLogger(__name__)
-            logger.setLevel(logging.INFO)
-            logger.addHandler(plugin_logger_handler)
-            
+            logger_config = LoggerConfig(log_level="INFO")
             # 创建Dify集成配置
             dify_config = DifyUploadConfig(
                 api_key=credentials.get("dataset_api_key"),
@@ -191,35 +211,42 @@ class SchemaRAGBuilderProvider(ToolProvider):
             tables_name = credentials.get("tables_name", "")
             include_tables = None
             if tables_name and tables_name.strip():
-                include_tables = [table.strip() for table in tables_name.split(",") if table.strip()]
-                logging.info(f"📋 指定构建以下表的RAG: {include_tables}")
+                include_tables = [
+                    table.strip()
+                    for table in tables_name.split(",")
+                    if table.strip()
+                ]
+                logger.info(f"📋 指定构建以下表的RAG: {include_tables}")
             else:
-                logging.info("📋 将构建所有表的RAG")
+                logger.info("📋 将构建所有表的RAG")
 
             # 创建构建器实例
-            builder = SchemaRAGBuilder(db_config, logger_config, dify_config, include_tables)
+            builder = SchemaRAGBuilder(
+                db_config,
+                logger_config,
+                dify_config,
+                include_tables,
+                logger=logger,
+            )
+            schema_content = builder.generate_dictionary()
 
-            try:
-                schema_content = builder.generate_dictionary()
+            # 记录成功信息
+            table_count = schema_content.count("#") if schema_content else 0
+            logger.info(f"📊 数据字典生成成功！包含 {table_count} 个表")
 
-                # 记录成功信息
-                table_count = schema_content.count("#") if schema_content else 0
-                logging.info(f"📊 数据字典生成成功！包含 {table_count} 个表")
+            # 上传到 Dify 知识库
+            dataset_name = f"{db_config.database}_schema"
+            builder.upload_text_to_dify(dataset_name, schema_content)
+            logger.info("☁️ 已成功上传到 Dify 知识库")
 
-                # 上传到 Dify 知识库
-                dataset_name = f"{db_config.database}_schema"
-                builder.upload_text_to_dify(dataset_name, schema_content)
-                logging.info("☁️ 已成功上传到 Dify 知识库")
-
-            except Exception as e:
-                logging.error(f"❌ Schema RAG构建失败: {e}")
-                raise ValueError(f"Schema RAG构建失败: {str(e)}")
-            finally:
-                builder.close()
-
+        except DatabaseConnectionError:
+            raise
         except Exception as e:
-            logging.error(f"❌ 配置验证或构建过程中发生错误: {e}")
-            raise ValueError(f"配置验证或构建过程中发生错误: {str(e)}")
+            logger.error(f"❌ Schema RAG构建失败: {e}")
+            raise ValueError(f"Schema RAG构建失败: {str(e)}") from e
+        finally:
+            if builder is not None:
+                builder.close()
 
     def get_tools(self):
         """

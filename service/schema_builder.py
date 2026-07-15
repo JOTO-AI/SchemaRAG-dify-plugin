@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import Optional, List
 import sys
 
@@ -7,7 +8,7 @@ sys.path.append(
 )  # 添加上级目录到路径中
 
 from sqlalchemy.engine import Engine
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from core.m_schema.schema_engine import SchemaEngine
 
 # 尝试导入达梦数据库 SQLAlchemy 方言，如果可用则自动注册
@@ -16,11 +17,21 @@ try:
 except ImportError:
     pass  # 达梦数据库支持可选
 from config import DatabaseConfig, DifyUploadConfig, LoggerConfig
+from service.database_connection import (
+    DatabaseConnectionError,
+    attach_dameng_schema_listener,
+    build_connection_uri,
+    build_engine_args,
+    diagnose_database_exception,
+    format_connection_target,
+    get_connection_test_sql,
+)
 from service.dify_service import DifyUploader
+from service.network_service import NetworkTester
 from utils import (
     Logger,
     normalize_dameng_schema_name,
-    quote_dameng_identifier,
+    normalize_oracle_schema_name,
     read_json,
 )
 
@@ -38,6 +49,7 @@ class SchemaRAGBuilder:
         logger_config: LoggerConfig,
         dify_config: Optional[DifyUploadConfig] = None,
         include_tables: Optional[List[str]] = None,
+        logger: Optional[logging.Logger] = None,
     ):
         if not isinstance(db_config, DatabaseConfig):
             raise TypeError("db_config必须为DatabaseConfig类型")
@@ -49,27 +61,71 @@ class SchemaRAGBuilder:
         self.logger_config = logger_config
         self.dify_config = dify_config
         self.include_tables = include_tables
-        self.logger_manager = Logger(self.logger_config)
-        self.logger = self.logger_manager.get_logger()
-        self.engine: Optional[Engine] = create_engine(
-            self.db_config.get_connection_string(),
-            **self._get_engine_args()
-        )
-
-        # 达梦数据库需要在每次连接建立时切换到正确的 schema
-        if self.db_config.type == "dameng":
-            dbname = normalize_dameng_schema_name(self.db_config.database)
-            quoted_dbname = quote_dameng_identifier(dbname)
-
-            @event.listens_for(self.engine, "connect")
-            def set_dameng_schema(dbapi_connection, connection_record):
-                cursor = dbapi_connection.cursor()
-                cursor.execute(f"ALTER SESSION SET CURRENT_SCHEMA = {quoted_dbname}")
-                cursor.close()
-
+        self.logger_manager = None
+        if logger is None:
+            self.logger_manager = Logger(self.logger_config)
+            self.logger = self.logger_manager.get_logger()
+        else:
+            self.logger = logger
+        self.engine: Optional[Engine] = None
         self.uploader: Optional[DifyUploader] = None
         self.schema_engine: Optional[SchemaEngine] = None
+        self._initialize_engine()
         self._initialize_components()
+
+    def _connection_target(self) -> str:
+        """生成不含密码的连接目标描述。"""
+        return format_connection_target(
+            self.db_config.type,
+            self.db_config.host,
+            self.db_config.port,
+            self.db_config.user,
+            self.db_config.database,
+            schema=self._resolve_schema_name(),
+            oracle_connect_type=self.db_config.oracle_connect_type,
+        )
+
+    def _raise_diagnostic_error(
+        self,
+        stage: str,
+        error: BaseException,
+        *,
+        schema: Optional[str] = None,
+    ) -> None:
+        """记录并抛出带处理建议的数据库诊断错误。"""
+        diagnostic = diagnose_database_exception(
+            stage,
+            self.db_config.type,
+            error,
+            target=self._connection_target(),
+            schema=schema,
+            secrets=[self.db_config.password],
+        )
+        self.logger.error(str(diagnostic))
+        raise diagnostic from error
+
+    def _initialize_engine(self) -> None:
+        """创建 SQLAlchemy Engine，但不把懒连接误认为连接成功。"""
+        target = self._connection_target()
+        self.logger.info(f"开始创建数据库引擎: {target}")
+        try:
+            self.engine = create_engine(
+                build_connection_uri(
+                    self.db_config.type,
+                    self.db_config.host,
+                    self.db_config.port,
+                    self.db_config.user,
+                    self.db_config.password,
+                    self.db_config.database,
+                    self.db_config.oracle_connect_type,
+                ),
+                **self._get_engine_args(),
+            )
+            if self.db_config.type == "dameng":
+                attach_dameng_schema_listener(self.engine, self.db_config.database)
+            self.logger.info(f"数据库引擎创建完成: {target}")
+        except Exception as e:
+            self._raise_diagnostic_error("数据库引擎创建", e)
 
     def _get_engine_args(self) -> dict:
         """
@@ -78,29 +134,36 @@ class SchemaRAGBuilder:
         Returns:
             引擎配置参数字典
         """
-        engine_args = {
-            "pool_pre_ping": True,
-            "pool_recycle": 3600,
-            "echo": False,
-        }
+        return build_engine_args(
+            self.db_config.type,
+            oracle_thick_mode=self.db_config.oracle_thick_mode,
+            oracle_client_lib_dir=self.db_config.oracle_client_lib_dir,
+        )
 
+    def _resolve_schema_name(self) -> Optional[str]:
+        """根据数据库类型解析用于元数据抽取的 schema/owner。"""
+        configured_schema = (self.db_config.schema or "").strip()
         db_type = self.db_config.type
 
-        if db_type == "mysql" or db_type == "doris":
-            engine_args["connect_args"] = {"charset": "utf8mb4"}
-        elif db_type == "mssql":
-            # SQL Server (pymssql) 配置：charset 使用小写 utf8
-            engine_args["connect_args"] = {"charset": "utf8"}
-        elif db_type == "oracle":
-            engine_args["connect_args"] = {"thick_mode_dsn_passthrough": False}
-        elif db_type == "dameng":
-            # dmPython.connect() 不接受 encoding 参数，达梦 schema 切换由事件监听器处理
-            pass
-        elif db_type == "postgresql":
-            # PostgreSQL 使用 psycopg2，默认支持 UTF-8
-            pass
+        if configured_schema:
+            if db_type == "oracle":
+                return normalize_oracle_schema_name(configured_schema)
+            if db_type == "dameng":
+                return normalize_dameng_schema_name(configured_schema)
+            return configured_schema
 
-        return engine_args
+        if db_type == "oracle":
+            return normalize_oracle_schema_name(self.db_config.user)
+        if db_type == "dameng":
+            return normalize_dameng_schema_name(self.db_config.database)
+        if db_type == "postgresql":
+            return "public"
+        if db_type == "mssql":
+            return "dbo"
+        if db_type in ["mysql", "doris"]:
+            return self.db_config.database
+
+        return None
 
     @staticmethod
     def from_config_file(
@@ -124,17 +187,40 @@ class SchemaRAGBuilder:
         """初始化所有服务组件"""
         if not self.engine:
             self.logger.error("数据库引擎未成功创建，无法初始化Schema引擎")
-            raise RuntimeError("数据库引擎未成功创建，请检查数据库配置")
+            raise DatabaseConnectionError(
+                "数据库引擎创建",
+                "SQLAlchemy Engine 未创建",
+                "请检查数据库类型、驱动依赖和连接配置。",
+            )
+        self._check_network_connectivity()
+        self._verify_database_connection()
+
+        schema_name = self._resolve_schema_name()
         try:
+            self.logger.info(
+                f"开始初始化 Schema 引擎: target={self._connection_target()}"
+            )
             self.schema_engine = SchemaEngine(
                 engine=self.engine,
+                schema=schema_name,
                 db_name=self.db_config.database,
                 include_tables=self.include_tables,
             )
-            self.logger.info("Schema引擎初始化成功")
+            usable_tables = list(self.schema_engine.get_usable_table_names())
+            if not usable_tables:
+                raise DatabaseConnectionError(
+                    "Schema 反射",
+                    f"当前配置下没有可见数据表: {self._connection_target()}",
+                    "请确认 Database Schema 是否正确、账号是否有表结构读取权限；如果只配置了 Tables Name，请先清空后重试确认可见表。",
+                )
+            self.logger.info(
+                f"Schema引擎初始化成功，可见表数量: {len(usable_tables)}"
+            )
+        except DatabaseConnectionError as e:
+            self.logger.error(str(e))
+            raise
         except Exception as e:
-            self.logger.error(f"Schema引擎初始化失败: {e}")
-            raise RuntimeError(f"无法初始化Schema引擎，请检查数据库配置: {e}") from e
+            self._raise_diagnostic_error("Schema 反射", e, schema=schema_name)
         if self.dify_config:
             try:
                 self.uploader = DifyUploader(self.dify_config, self.logger)
@@ -154,9 +240,11 @@ class SchemaRAGBuilder:
         self.logger.info("开始生成数据字典...")
         try:
             mschema = self.schema_engine.mschema
-            if not mschema:
-                self.logger.error("未能获取到数据库schema信息")
-                raise RuntimeError("无法获取数据库schema信息，请检查数据库连接")
+            if not mschema or not mschema.tables:
+                self.logger.error("未能获取到可用数据库schema信息")
+                raise RuntimeError(
+                    "无法获取数据库schema信息：目标 schema 下没有可见表或账号缺少元数据读取权限"
+                )
             mschema_str = mschema.to_mschema()
             # if save_path:
             #     if save_path.endswith(".json"):
@@ -220,3 +308,39 @@ class SchemaRAGBuilder:
         if self.engine:
             self.engine.dispose()
             self.logger.info("数据库连接已关闭")
+
+    def _check_network_connectivity(self) -> None:
+        """在 DBAPI 登录前先检查插件运行环境到数据库端口的 TCP 连通性。"""
+        if self.db_config.type == "sqlite":
+            return
+
+        target = self._connection_target()
+        self.logger.info(f"开始检查数据库网络连通性: {target}")
+        if NetworkTester.test_connectivity(
+            self.db_config.host,
+            self.db_config.port,
+        ):
+            self.logger.info(f"数据库网络连通性检查通过: {target}")
+            return
+
+        diagnostic = DatabaseConnectionError(
+            "网络连通性检查",
+            f"插件运行环境无法连接到 {self.db_config.host}:{self.db_config.port}",
+            "请确认主机、端口、防火墙、安全组和 Dify plugin_daemon 容器网络；如果数据库在宿主机本机，不要在容器中使用 127.0.0.1。",
+        )
+        self.logger.error(str(diagnostic))
+        raise diagnostic
+
+    def _verify_database_connection(self) -> None:
+        """显式打开连接并执行轻量探测 SQL，定位认证与服务名问题。"""
+        if not self.engine:
+            return
+
+        target = self._connection_target()
+        self.logger.info(f"开始验证数据库登录与基础查询: {target}")
+        try:
+            with self.engine.connect() as connection:
+                connection.exec_driver_sql(get_connection_test_sql(self.db_config.type))
+            self.logger.info(f"数据库登录与基础查询验证通过: {target}")
+        except Exception as e:
+            self._raise_diagnostic_error("数据库登录验证", e)

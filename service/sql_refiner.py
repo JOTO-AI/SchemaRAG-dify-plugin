@@ -156,7 +156,12 @@ class SQLRefiner:
                 user=db_config['user'],
                 password=db_config['password'],
                 dbname=db_config['dbname'],
-                query=validation_sql
+                query=validation_sql,
+                oracle_connect_type=db_config.get(
+                    'oracle_connect_type', 'service_name'
+                ),
+                oracle_thick_mode=db_config.get('oracle_thick_mode'),
+                oracle_client_lib_dir=db_config.get('oracle_client_lib_dir')
             )
             
             return True, ""

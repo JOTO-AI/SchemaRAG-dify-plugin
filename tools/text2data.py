@@ -3,15 +3,14 @@ from typing import Any, Optional, List, Dict
 import sys
 import os
 import re
-import logging
 from prompt import text2sql_prompt, summary_prompt
 from service.knowledge_service import KnowledgeService
 from service.database_service import DatabaseService
 from service.sql_refiner import SQLRefiner
+from service.plugin_logging import get_plugin_logger
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
-from dify_plugin.config.logger_format import plugin_logger_handler
 
 from utils import (
     _clean_and_validate_sql,
@@ -52,8 +51,7 @@ class Text2DataTool(Tool):
         self.api_uri = self.runtime.credentials.get("api_uri")
         self.dataset_api_key = self.runtime.credentials.get("dataset_api_key")
         self.knowledge_service = KnowledgeService(self.api_uri, self.dataset_api_key)
-        self.logger = logging.getLogger(__name__)
-        self.logger.addHandler(plugin_logger_handler)
+        self.logger = get_plugin_logger(__name__)
 
         # 初始化数据库服务
         self.db_service = DatabaseService()
@@ -68,6 +66,13 @@ class Text2DataTool(Tool):
         self.db_user = credentials.get("db_user")
         self.db_password = credentials.get("db_password")
         self.db_name = credentials.get("db_name")
+        self.oracle_connect_type = credentials.get(
+            "oracle_connect_type", "service_name"
+        )
+        self.oracle_thick_mode = str(
+            credentials.get("oracle_thick_mode", "false")
+        ).lower() in {"1", "true", "yes", "y", "on"}
+        self.oracle_client_lib_dir = credentials.get("oracle_client_lib_dir")
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
@@ -229,8 +234,16 @@ class Text2DataTool(Tool):
             
             try:
                 results, columns = self.db_service.execute_query(
-                    self.db_type, self.db_host, self.db_port,
-                    self.db_user, self.db_password, self.db_name, sql_query
+                    self.db_type,
+                    self.db_host,
+                    self.db_port,
+                    self.db_user,
+                    self.db_password,
+                    self.db_name,
+                    sql_query,
+                    self.oracle_connect_type,
+                    self.oracle_thick_mode,
+                    self.oracle_client_lib_dir,
                 )
                 yield self.create_text_message(text=f"✅ 执行成功\n\n共返回 {len(results)} 行数据\n\n")
                 
@@ -258,7 +271,10 @@ class Text2DataTool(Tool):
                             'port': self.db_port,
                             'user': self.db_user,
                             'password': self.db_password,
-                            'dbname': self.db_name
+                            'dbname': self.db_name,
+                            'oracle_connect_type': self.oracle_connect_type,
+                            'oracle_thick_mode': self.oracle_thick_mode,
+                            'oracle_client_lib_dir': self.oracle_client_lib_dir,
                         }
                         
                         # 执行SQL修复
@@ -281,8 +297,16 @@ class Text2DataTool(Tool):
                             
                             # 使用修复后的SQL重新执行
                             results, columns = self.db_service.execute_query(
-                                self.db_type, self.db_host, self.db_port,
-                                self.db_user, self.db_password, self.db_name, refined_sql
+                                self.db_type,
+                                self.db_host,
+                                self.db_port,
+                                self.db_user,
+                                self.db_password,
+                                self.db_name,
+                                refined_sql,
+                                self.oracle_connect_type,
+                                self.oracle_thick_mode,
+                                self.oracle_client_lib_dir,
                             )
                             
                             # 更新sql_query为修复后的版本（用于后续日志）

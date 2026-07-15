@@ -57,6 +57,7 @@ class SQLDatabase:
         custom_table_info: Optional[dict] = None,
         view_support: bool = False,
         max_string_length: int = 300,
+        reflect_metadata: bool = True,
     ):
         """Create engine from database URI."""
         self._engine = engine
@@ -114,6 +115,9 @@ class SQLDatabase:
         self._max_string_length = max_string_length
 
         self._metadata = metadata or MetaData()
+        if not reflect_metadata:
+            return
+
         # Reflecting metadata can trigger dialect-specific index/introspection code.
         # dmSQLAlchemy has compatibility issues with some SQLAlchemy 2.x versions during
         # index reflection; schema generation in this project relies primarily on the

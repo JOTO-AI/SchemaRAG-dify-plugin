@@ -5,7 +5,7 @@
 import os
 from dataclasses import dataclass
 from typing import Optional
-from urllib.parse import quote_plus
+from urllib.parse import quote, quote_plus
 
 # 尝试导入dotenv，如果失败则忽略。在生产环境中，通常使用环境变量。
 try:
@@ -27,6 +27,14 @@ def get_env_int(key: str, default: Optional[int] = None) -> Optional[int]:
     return int(value) if value is not None else default
 
 
+def get_env_bool(key: str, default: bool = False) -> bool:
+    """从环境变量中获取布尔值"""
+    value = get_env(key)
+    if value is None:
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 @dataclass
 class DatabaseConfig:
     """数据库连接配置"""
@@ -37,6 +45,10 @@ class DatabaseConfig:
     user: str = get_env("DB_USER", "root")
     password: str = get_env("DB_PASSWORD", "password")
     database: str = get_env("DB_NAME")
+    schema: Optional[str] = get_env("DB_SCHEMA")
+    oracle_connect_type: str = get_env("ORACLE_CONNECT_TYPE", "service_name")
+    oracle_thick_mode: bool = get_env_bool("ORACLE_THICK_MODE", False)
+    oracle_client_lib_dir: Optional[str] = get_env("ORACLE_CLIENT_LIB_DIR")
 
     def get_connection_string(self) -> str:
         """获取数据库连接字符串"""
@@ -46,21 +58,29 @@ class DatabaseConfig:
         # 对用户名和密码进行 URL 编码，处理特殊字符（如 @, #, $ 等）
         encoded_user = quote_plus(self.user)
         encoded_password = quote_plus(self.password)
+        encoded_database = quote(str(self.database or ""), safe="")
         
         if self.type == "postgresql":
-            return f"postgresql+psycopg2://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"postgresql+psycopg2://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         elif self.type == "mysql":
-            return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         elif self.type == "mssql":
-            return f"mssql+pymssql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            return f"mssql+pymssql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         elif self.type == "oracle":
-            # Oracle 使用 service_name 格式
-            return f"oracle+oracledb://{encoded_user}:{encoded_password}@{self.host}:{self.port}/?service_name={self.database}"
+            connect_type = (self.oracle_connect_type or "service_name").strip().lower()
+            if connect_type == "sid":
+                sid = quote(str(self.database or ""), safe="")
+                return f"oracle+oracledb://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{sid}"
+
+            # Oracle 默认使用 service_name 格式
+            service_name = quote_plus(str(self.database or ""))
+            return f"oracle+oracledb://{encoded_user}:{encoded_password}@{self.host}:{self.port}/?service_name={service_name}"
         elif self.type == "dameng":
             # 达梦 dmPython.connect() 不接受 database 参数，URI 中不能带 /{database}
             return f"dm+dmPython://{encoded_user}:{encoded_password}@{self.host}:{self.port}"
         elif self.type == "doris":
-            return f"doris+mysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{self.database}"
+            # Apache Doris 兼容 MySQL 协议，使用 SQLAlchemy 内置 MySQL 方言连接。
+            return f"mysql+pymysql://{encoded_user}:{encoded_password}@{self.host}:{self.port}/{encoded_database}"
         else:
             raise ValueError(f"Unsupported database type: {self.type}")
 

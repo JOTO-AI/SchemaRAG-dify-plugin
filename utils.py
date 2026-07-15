@@ -18,7 +18,7 @@ class PerformanceConfig:
     """性能配置类，统一管理性能相关参数"""
 
     QUERY_TIMEOUT = 30  # 查询超时时间（秒）
-    DECIMAL_PLACES = 2  # 小数位数
+    DECIMAL_PLACES = None  # 默认保留数据库返回的浮点精度
     CACHE_MAX_SIZE = 5  # 数据库连接缓存大小
     ENABLE_PERFORMANCE_LOG = True  # 是否启用性能日志
 
@@ -115,6 +115,21 @@ def normalize_dameng_schema_name(schema_name: Optional[str]) -> Optional[str]:
     return normalized.upper()
 
 
+def normalize_oracle_schema_name(schema_name: Optional[str]) -> Optional[str]:
+    """规范化 Oracle schema/owner 名称，未加引号的标识符按 Oracle 规则转为大写。"""
+    if schema_name is None:
+        return None
+
+    normalized = str(schema_name).strip()
+    if not normalized:
+        return normalized
+
+    if len(normalized) >= 2 and normalized.startswith('"') and normalized.endswith('"'):
+        return normalized[1:-1].replace('""', '"')
+
+    return normalized.upper()
+
+
 def quote_dameng_identifier(identifier: str) -> str:
     """安全地为达梦标识符添加双引号。"""
     return f'"{identifier.replace("\"", "\"\"")}"'
@@ -184,12 +199,16 @@ def safe_port_conversion(port_value, logger=None) -> Optional[int]:
         return None
 
 
-def format_numeric_values(results: List[Dict], decimal_places: int = 2, logger=None) -> List[Dict]:
-    """格式化数值，避免科学计数法，保留指定小数位数
+def format_numeric_values(
+    results: List[Dict],
+    decimal_places: Optional[int] = None,
+    logger=None,
+) -> List[Dict]:
+    """格式化数值，避免科学计数法，默认保留数据库返回精度
     
     Args:
         results: 查询结果列表
-        decimal_places: 小数位数，默认为2
+        decimal_places: 可选小数位数；不传时保留原始有效精度
         logger: 可选的日志记录器
         
     Returns:
@@ -210,12 +229,12 @@ def format_numeric_values(results: List[Dict], decimal_places: int = 2, logger=N
     return formatted_results
 
 
-def format_single_value(value, decimal_places: int = 2) -> Any:
+def format_single_value(value, decimal_places: Optional[int] = None) -> Any:
     """格式化单个值，优化性能和逻辑
     
     Args:
         value: 要格式化的值
-        decimal_places: 小数位数，默认为2
+        decimal_places: 可选小数位数；不传时保留原始有效精度
         
     Returns:
         格式化后的值
@@ -246,9 +265,10 @@ def format_single_value(value, decimal_places: int = 2) -> Any:
             # 检查是否为整数值（如 1.0, 2.0）
             if value.is_integer():
                 return str(int(value))  # 1.0 显示为 "1" 而不是 "1.00"
-            else:
+            if decimal_places is not None:
                 # 浮点数保留指定小数位数，避免科学计数法
                 return f"{value:.{decimal_places}f}"
+            return format(decimal.Decimal(str(value)), "f")
 
         # 其他数值类型的安全处理
         return str(value)
