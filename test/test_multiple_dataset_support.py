@@ -72,8 +72,23 @@ class TestMultipleDatasetSupport(unittest.TestCase):
                 {"segment": {"content": "Test schema content"}}
             ]
         }
+        mock_dataset_response = Mock()
+        mock_dataset_response.status_code = 200
+        mock_dataset_response.json.return_value = {
+            "retrieval_model_dict": {
+                "search_method": "semantic_search",
+                "reranking_enable": False,
+                "reranking_model": {
+                    "reranking_provider_name": "",
+                    "reranking_model_name": "",
+                },
+                "top_k": 2,
+                "score_threshold_enabled": False,
+            }
+        }
         
         mock_client_instance = AsyncMock()
+        mock_client_instance.get.return_value = mock_dataset_response
         mock_client_instance.post.return_value = mock_response
         mock_client.return_value.__aenter__.return_value = mock_client_instance
         
